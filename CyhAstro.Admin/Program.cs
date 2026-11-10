@@ -2,6 +2,9 @@ using CyhAstro.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional local configuration override for developer secrets (ignored by Git)
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 // ══════════════════════════════════════════════
 // 1. RAZOR PAGES + SESSION
 // ══════════════════════════════════════════════

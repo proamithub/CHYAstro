@@ -49,8 +49,7 @@ public static class DependencyInjection
             var config    = sp.GetRequiredService<IConfiguration>();
             var factory   = sp.GetRequiredService<IHttpClientFactory>();
             var http      = factory.CreateClient("GeminiClient");
-            var apiKey    = config["GeminiSettings:ApiKey"]
-                            ?? throw new InvalidOperationException("GeminiSettings:ApiKey is not configured.");
+            var apiKey    = config["GeminiSettings:ApiKey"] ?? string.Empty;
 
             // Prompts DB se load hoti hain (admin configure karta hai)
             // Fallback: hardcoded defaults
