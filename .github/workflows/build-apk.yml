@@ -17,21 +17,18 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Build Debug APK
         working-directory: CyhAstro.Android
         run: |
-          gradle wrapper
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          gradle assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CyhAstro-Release-APK
+          name: CyhAstro-Android-APK
           path: CyhAstro.Android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
