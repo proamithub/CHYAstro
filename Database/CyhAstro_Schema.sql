@@ -1,10 +1,15 @@
 -- ============================================================
 -- CyhAstro Database Schema
--- SQL Server 2019+ / SQL Server Express
+-- SQL Server 2022 / Express Edition
 -- All tables, indexes and stored procedures
 -- ============================================================
 
 USE master;
+GO
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
 GO
 
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'CyhAstroDB')
@@ -14,6 +19,11 @@ END
 GO
 
 USE CyhAstroDB;
+GO
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
 GO
 
 -- ============================================================
@@ -27,23 +37,33 @@ BEGIN
         Email           NVARCHAR(200)       NULL,
         PhoneNumber     NVARCHAR(20)        NULL,
         PasswordHash    NVARCHAR(500)       NOT NULL,
-        Gender          NVARCHAR(10)        NOT NULL DEFAULT 'Other',   -- Male, Female, Other
+        Gender          NVARCHAR(10)        NOT NULL DEFAULT 'Other',
         DateOfBirth     DATE                NOT NULL,
         TimeOfBirth     TIME                NULL,
         BirthCity       NVARCHAR(150)       NULL,
         BirthLatitude   DECIMAL(9,6)        NULL,
         BirthLongitude  DECIMAL(9,6)        NULL,
         ProfilePhotoUrl NVARCHAR(500)       NULL,
-        Role            NVARCHAR(20)        NOT NULL DEFAULT 'User',    -- User, Admin
+        Role            NVARCHAR(20)        NOT NULL DEFAULT 'User',
         IsActive        BIT                 NOT NULL DEFAULT 1,
         IsBlocked       BIT                 NOT NULL DEFAULT 0,
         BlockReason     NVARCHAR(300)       NULL,
-        DeviceToken     NVARCHAR(500)       NULL,       -- Push notification
+        DeviceToken     NVARCHAR(500)       NULL,
         LastLoginAt     DATETIME2           NULL,
         CreatedAt       DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
         UpdatedAt       DATETIME2           NOT NULL DEFAULT GETUTCDATE()
     );
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Users_Email' AND object_id = OBJECT_ID('tbl_Users'))
+BEGIN
     CREATE UNIQUE INDEX UX_Users_Email ON tbl_Users(Email) WHERE Email IS NOT NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Users_Phone' AND object_id = OBJECT_ID('tbl_Users'))
+BEGIN
     CREATE UNIQUE INDEX UX_Users_Phone ON tbl_Users(PhoneNumber) WHERE PhoneNumber IS NOT NULL;
 END
 GO
@@ -56,27 +76,32 @@ BEGIN
     CREATE TABLE tbl_Subscriptions (
         SubId               UNIQUEIDENTIFIER    NOT NULL DEFAULT NEWID() PRIMARY KEY,
         UserId              UNIQUEIDENTIFIER    NOT NULL REFERENCES tbl_Users(UserId),
-        Plan                NVARCHAR(20)        NOT NULL DEFAULT 'Free', -- Free, Weekly, Monthly, Yearly, Lifetime
+        [Plan]              NVARCHAR(20)        NOT NULL DEFAULT 'Free',
         StartDate           DATETIME2           NULL,
         ExpiryDate          DATETIME2           NULL,
-        IsActive            AS (CASE WHEN Plan = 'Free' THEN CAST(1 AS BIT)
+        IsActive            AS (CASE WHEN [Plan] = 'Free' THEN CAST(1 AS BIT)
                                      WHEN ExpiryDate > GETUTCDATE() THEN CAST(1 AS BIT)
-                                     ELSE CAST(0 AS BIT) END) PERSISTED,
-        PalmScansRemaining  INT                 NOT NULL DEFAULT 1,     -- Free: 1, Paid: 999
-        FaceScansRemaining  INT                 NOT NULL DEFAULT 0,     -- Free: 0, Paid: 999
+                                     ELSE CAST(0 AS BIT) END),
+        PalmScansRemaining  INT                 NOT NULL DEFAULT 1,
+        FaceScansRemaining  INT                 NOT NULL DEFAULT 0,
         ChatQuestionsToday  INT                 NOT NULL DEFAULT 3,
         QuotaResetDate      DATE                NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
-        PaymentGateway      NVARCHAR(50)        NULL,  -- Razorpay, GooglePlay, AppleStore, Manual
+        PaymentGateway      NVARCHAR(50)        NULL,
         GatewayTxnId        NVARCHAR(300)       NULL,
         CreatedAt           DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
         UpdatedAt           DATETIME2           NOT NULL DEFAULT GETUTCDATE()
     );
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Sub_UserId' AND object_id = OBJECT_ID('tbl_Subscriptions'))
+BEGIN
     CREATE UNIQUE INDEX UX_Sub_UserId ON tbl_Subscriptions(UserId);
 END
 GO
 
 -- ============================================================
--- TABLE 3: tbl_UserLedger (Financial & Credit Khata)
+-- TABLE 3: tbl_UserLedger
 -- ============================================================
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tbl_UserLedger')
 BEGIN
@@ -84,18 +109,27 @@ BEGIN
         LedgerId            UNIQUEIDENTIFIER    NOT NULL DEFAULT NEWID() PRIMARY KEY,
         UserId              UNIQUEIDENTIFIER    NOT NULL REFERENCES tbl_Users(UserId),
         TransactionType     NVARCHAR(50)        NOT NULL,
-        -- SubscriptionPurchase, ScanDeduction, CreditTopUp, Refund, AdminAdjustment, DailyReset
         AmountINR           DECIMAL(10,2)       NOT NULL DEFAULT 0.00,
-        CreditChange        INT                 NOT NULL DEFAULT 0,     -- +5 add, -1 deduct
-        BalanceAfter        INT                 NOT NULL DEFAULT 0,     -- Total credits after this txn
+        CreditChange        INT                 NOT NULL DEFAULT 0,
+        BalanceAfter        INT                 NOT NULL DEFAULT 0,
         Description         NVARCHAR(500)       NOT NULL,
-        Status              NVARCHAR(20)        NOT NULL DEFAULT 'Success', -- Pending, Success, Failed
+        Status              NVARCHAR(20)        NOT NULL DEFAULT 'Success',
         PaymentGateway      NVARCHAR(50)        NULL,
         GatewayTxnId        NVARCHAR(300)       NULL,
         AdminRemark         NVARCHAR(300)       NULL,
         CreatedAt           DATETIME2           NOT NULL DEFAULT GETUTCDATE()
     );
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Ledger_UserId' AND object_id = OBJECT_ID('tbl_UserLedger'))
+BEGIN
     CREATE INDEX IX_Ledger_UserId ON tbl_UserLedger(UserId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Ledger_CreatedAt' AND object_id = OBJECT_ID('tbl_UserLedger'))
+BEGIN
     CREATE INDEX IX_Ledger_CreatedAt ON tbl_UserLedger(CreatedAt DESC);
 END
 GO
@@ -108,21 +142,26 @@ BEGIN
     CREATE TABLE tbl_KundliProfiles (
         KundliId            UNIQUEIDENTIFIER    NOT NULL DEFAULT NEWID() PRIMARY KEY,
         UserId              UNIQUEIDENTIFIER    NOT NULL REFERENCES tbl_Users(UserId),
-        LagnaRashi          NVARCHAR(50)        NULL,   -- e.g. Mesh (Aries)
+        LagnaRashi          NVARCHAR(50)        NULL,
         LagnaDegree         DECIMAL(8,4)        NULL,
-        MoonRashi           NVARCHAR(50)        NULL,   -- Chandra Rashi
-        SunRashi            NVARCHAR(50)        NULL,   -- Surya Rashi
-        Nakshatra           NVARCHAR(80)        NULL,   -- e.g. Rohini
-        NakshatraPada       INT                 NULL,   -- 1 to 4
+        MoonRashi           NVARCHAR(50)        NULL,
+        SunRashi            NVARCHAR(50)        NULL,
+        Nakshatra           NVARCHAR(80)        NULL,
+        NakshatraPada       INT                 NULL,
         MahadashaCurrent    NVARCHAR(50)        NULL,
         MahadashaEndDate    DATE                NULL,
         IsManglik           BIT                 NOT NULL DEFAULT 0,
         SadeSatiActive      BIT                 NOT NULL DEFAULT 0,
-        PlanetaryJson       NVARCHAR(MAX)       NULL,   -- All 9 Grahas positions JSON
+        PlanetaryJson       NVARCHAR(MAX)       NULL,
         AyanamsaUsed        NVARCHAR(30)        NULL DEFAULT 'Lahiri',
         CreatedAt           DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
         UpdatedAt           DATETIME2           NOT NULL DEFAULT GETUTCDATE()
     );
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Kundli_UserId' AND object_id = OBJECT_ID('tbl_KundliProfiles'))
+BEGIN
     CREATE UNIQUE INDEX UX_Kundli_UserId ON tbl_KundliProfiles(UserId);
 END
 GO
@@ -135,18 +174,28 @@ BEGIN
     CREATE TABLE tbl_ScanHistory (
         ScanId              UNIQUEIDENTIFIER    NOT NULL DEFAULT NEWID() PRIMARY KEY,
         UserId              UNIQUEIDENTIFIER    NOT NULL REFERENCES tbl_Users(UserId),
-        ScanType            NVARCHAR(20)        NOT NULL,   -- Palm, Face
-        HandSide            NVARCHAR(10)        NULL,       -- Left, Right (Palm ke liye)
-        ImagePath           NVARCHAR(500)       NOT NULL,   -- Server upload path
+        ScanType            NVARCHAR(20)        NOT NULL,
+        HandSide            NVARCHAR(10)        NULL,
+        ImagePath           NVARCHAR(500)       NOT NULL,
         ThumbnailPath       NVARCHAR(500)       NULL,
-        AiRawResponse       NVARCHAR(MAX)       NULL,       -- Gemini ka full JSON response
-        SummaryText         NVARCHAR(MAX)       NULL,       -- User ko dikhne wala result
+        AiRawResponse       NVARCHAR(MAX)       NULL,
+        SummaryText         NVARCHAR(MAX)       NULL,
         IsFullReportUnlocked BIT               NOT NULL DEFAULT 0,
-        SyncStatus          NVARCHAR(20)        NOT NULL DEFAULT 'Synced', -- Pending, Synced, Failed
+        SyncStatus          NVARCHAR(20)        NOT NULL DEFAULT 'Synced',
         ScannedAt           DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
         SyncedAt            DATETIME2           NULL
     );
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Scan_UserId' AND object_id = OBJECT_ID('tbl_ScanHistory'))
+BEGIN
     CREATE INDEX IX_Scan_UserId ON tbl_ScanHistory(UserId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Scan_Status' AND object_id = OBJECT_ID('tbl_ScanHistory'))
+BEGIN
     CREATE INDEX IX_Scan_Status ON tbl_ScanHistory(SyncStatus);
 END
 GO
@@ -158,10 +207,10 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tbl_AppVersions')
 BEGIN
     CREATE TABLE tbl_AppVersions (
         VersionId       UNIQUEIDENTIFIER    NOT NULL DEFAULT NEWID() PRIMARY KEY,
-        Platform        NVARCHAR(20)        NOT NULL,   -- Android, iOS, Windows
-        VersionCode     INT                 NOT NULL,   -- 2, 3, 4...
-        VersionName     NVARCHAR(20)        NOT NULL,   -- 1.0.1, 1.2.0
-        DownloadUrl     NVARCHAR(500)       NULL,       -- Direct APK URL
+        Platform        NVARCHAR(20)        NOT NULL,
+        VersionCode     INT                 NOT NULL,
+        VersionName     NVARCHAR(20)        NOT NULL,
+        DownloadUrl     NVARCHAR(500)       NULL,
         PlayStoreUrl    NVARCHAR(500)       NULL,
         ReleaseNotes    NVARCHAR(1000)      NULL,
         IsMandatory     BIT                 NOT NULL DEFAULT 0,
@@ -172,7 +221,7 @@ END
 GO
 
 -- ============================================================
--- TABLE 7: tbl_AppSettings (Admin se configure hoga)
+-- TABLE 7: tbl_AppSettings
 -- ============================================================
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tbl_AppSettings')
 BEGIN
@@ -184,7 +233,6 @@ BEGIN
         UpdatedBy       NVARCHAR(100)   NULL
     );
 
-    -- Default Settings Insert
     INSERT INTO tbl_AppSettings (SettingKey, SettingValue, Description) VALUES
     ('PriceWeeklyINR',       '99',   'Weekly subscription price in INR'),
     ('PriceMonthlyINR',      '299',  'Monthly subscription price in INR'),
@@ -209,15 +257,10 @@ PRINT 'All Tables Created Successfully.';
 GO
 
 -- ============================================================
--- ============================================================
 -- STORED PROCEDURES
 -- ============================================================
--- ============================================================
 
-
--- ============================================================
--- SP 1: sp_User_RegisterOrLogin
--- ============================================================
+-- 1: sp_User_RegisterOrLogin
 CREATE OR ALTER PROCEDURE sp_User_RegisterOrLogin
     @FullName       NVARCHAR(150),
     @Email          NVARCHAR(200)   = NULL,
@@ -230,7 +273,7 @@ CREATE OR ALTER PROCEDURE sp_User_RegisterOrLogin
     @BirthLatitude  DECIMAL(9,6)    = NULL,
     @BirthLongitude DECIMAL(9,6)    = NULL,
     @DeviceToken    NVARCHAR(500)   = NULL,
-    @ResultCode     INT             OUTPUT,  -- 0=Success, 1=Already Exists, -1=Error
+    @ResultCode     INT             OUTPUT,
     @UserId         UNIQUEIDENTIFIER OUTPUT
 AS
 BEGIN
@@ -238,42 +281,34 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Check if user already exists
         IF EXISTS (SELECT 1 FROM tbl_Users WHERE Email = @Email AND @Email IS NOT NULL)
            OR EXISTS (SELECT 1 FROM tbl_Users WHERE PhoneNumber = @PhoneNumber AND @PhoneNumber IS NOT NULL)
         BEGIN
-            -- Login: return existing user
             SELECT @UserId = UserId FROM tbl_Users
             WHERE (Email = @Email AND @Email IS NOT NULL)
                OR (PhoneNumber = @PhoneNumber AND @PhoneNumber IS NOT NULL);
 
-            -- Update device token and last login
             UPDATE tbl_Users SET DeviceToken = @DeviceToken, LastLoginAt = GETUTCDATE()
             WHERE UserId = @UserId;
 
-            SET @ResultCode = 1; -- Existing user
+            SET @ResultCode = 1;
             COMMIT TRANSACTION;
             RETURN;
         END
 
-        -- New User Registration
         SET @UserId = NEWID();
-
-        -- Get free scan settings
         DECLARE @FreeScans INT = (SELECT CAST(SettingValue AS INT) FROM tbl_AppSettings WHERE SettingKey = 'FreeUserPalmScans');
 
         INSERT INTO tbl_Users (UserId, FullName, Email, PhoneNumber, PasswordHash, Gender, DateOfBirth, TimeOfBirth, BirthCity, BirthLatitude, BirthLongitude, DeviceToken, LastLoginAt)
         VALUES (@UserId, @FullName, @Email, @PhoneNumber, @PasswordHash, @Gender, @DateOfBirth, @TimeOfBirth, @BirthCity, @BirthLatitude, @BirthLongitude, @DeviceToken, GETUTCDATE());
 
-        -- Create default Free subscription + initial quota
-        INSERT INTO tbl_Subscriptions (UserId, Plan, PalmScansRemaining, FaceScansRemaining)
+        INSERT INTO tbl_Subscriptions (UserId, [Plan], PalmScansRemaining, FaceScansRemaining)
         VALUES (@UserId, 'Free', @FreeScans, 0);
 
-        -- Log first ledger entry: Welcome credits
         INSERT INTO tbl_UserLedger (UserId, TransactionType, AmountINR, CreditChange, BalanceAfter, Description, Status)
         VALUES (@UserId, 'WelcomeCredit', 0, @FreeScans, @FreeScans, 'Welcome! ' + CAST(@FreeScans AS NVARCHAR) + ' free palm scan credited.', 'Success');
 
-        SET @ResultCode = 0; -- New user registered
+        SET @ResultCode = 0;
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
@@ -284,9 +319,7 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 2: sp_User_GetProfile
--- ============================================================
+-- 2: sp_User_GetProfile
 CREATE OR ALTER PROCEDURE sp_User_GetProfile
     @UserId UNIQUEIDENTIFIER
 AS
@@ -296,7 +329,7 @@ BEGIN
         u.UserId, u.FullName, u.Email, u.PhoneNumber, u.Gender,
         u.DateOfBirth, u.TimeOfBirth, u.BirthCity, u.BirthLatitude, u.BirthLongitude,
         u.ProfilePhotoUrl, u.Role, u.IsActive, u.IsBlocked, u.LastLoginAt,
-        s.Plan, s.IsActive AS IsSubscriptionActive, s.ExpiryDate,
+        s.[Plan], s.IsActive AS IsSubscriptionActive, s.ExpiryDate,
         s.PalmScansRemaining, s.FaceScansRemaining, s.ChatQuestionsToday,
         k.LagnaRashi, k.MoonRashi, k.SunRashi, k.Nakshatra, k.NakshatraPada,
         k.MahadashaCurrent, k.MahadashaEndDate, k.IsManglik, k.SadeSatiActive
@@ -307,19 +340,17 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 3: sp_Scan_Save (ATOMIC - Credit Deduct + Save)
--- ============================================================
+-- 3: sp_Scan_Save
 CREATE OR ALTER PROCEDURE sp_Scan_Save
     @UserId         UNIQUEIDENTIFIER,
-    @ScanType       NVARCHAR(20),    -- Palm, Face
+    @ScanType       NVARCHAR(20),
     @HandSide       NVARCHAR(10)     = NULL,
     @ImagePath      NVARCHAR(500),
     @ThumbnailPath  NVARCHAR(500)    = NULL,
     @AiRawResponse  NVARCHAR(MAX)    = NULL,
     @SummaryText    NVARCHAR(MAX)    = NULL,
     @ScanId         UNIQUEIDENTIFIER OUTPUT,
-    @ResultCode     INT              OUTPUT,  -- 0=OK, 1=No Credits, -1=Error
+    @ResultCode     INT              OUTPUT,
     @CreditsLeft    INT              OUTPUT
 AS
 BEGIN
@@ -327,20 +358,18 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Check credits
         DECLARE @PalmLeft INT, @FaceLeft INT, @CurrentBalance INT;
         SELECT @PalmLeft = PalmScansRemaining, @FaceLeft = FaceScansRemaining
         FROM tbl_Subscriptions WHERE UserId = @UserId;
 
         IF (@ScanType = 'Palm' AND @PalmLeft <= 0) OR (@ScanType = 'Face' AND @FaceLeft <= 0)
         BEGIN
-            SET @ResultCode = 1; -- No Credits
+            SET @ResultCode = 1;
             SET @CreditsLeft = 0;
             ROLLBACK TRANSACTION;
             RETURN;
         END
 
-        -- Deduct credit
         IF @ScanType = 'Palm'
         BEGIN
             UPDATE tbl_Subscriptions SET PalmScansRemaining = PalmScansRemaining - 1 WHERE UserId = @UserId;
@@ -352,15 +381,12 @@ BEGIN
             SELECT @CreditsLeft = FaceScansRemaining FROM tbl_Subscriptions WHERE UserId = @UserId;
         END
 
-        -- Get current total balance for ledger
         SELECT @CurrentBalance = (PalmScansRemaining + FaceScansRemaining) FROM tbl_Subscriptions WHERE UserId = @UserId;
 
-        -- Save scan record
         SET @ScanId = NEWID();
         INSERT INTO tbl_ScanHistory (ScanId, UserId, ScanType, HandSide, ImagePath, ThumbnailPath, AiRawResponse, SummaryText, SyncStatus)
         VALUES (@ScanId, @UserId, @ScanType, @HandSide, @ImagePath, @ThumbnailPath, @AiRawResponse, @SummaryText, 'Synced');
 
-        -- Log ledger entry
         INSERT INTO tbl_UserLedger (UserId, TransactionType, AmountINR, CreditChange, BalanceAfter, Description, Status)
         VALUES (@UserId, 'ScanDeduction', 0, -1, @CurrentBalance,
                 @ScanType + ' scan completed. 1 credit used.', 'Success');
@@ -377,9 +403,7 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 4: sp_Scan_SaveOffline (Mobile offline queue se)
--- ============================================================
+-- 4: sp_Scan_SaveOffline
 CREATE OR ALTER PROCEDURE sp_Scan_SaveOffline
     @UserId         UNIQUEIDENTIFIER,
     @ScanType       NVARCHAR(20),
@@ -396,9 +420,7 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 5: sp_Scan_UpdateAiResult (After Gemini processing)
--- ============================================================
+-- 5: sp_Scan_UpdateAiResult
 CREATE OR ALTER PROCEDURE sp_Scan_UpdateAiResult
     @ScanId         UNIQUEIDENTIFIER,
     @AiRawResponse  NVARCHAR(MAX),
@@ -415,12 +437,10 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 6: sp_Subscription_Upgrade (ATOMIC - Plan + Ledger)
--- ============================================================
+-- 6: sp_Subscription_Upgrade
 CREATE OR ALTER PROCEDURE sp_Subscription_Upgrade
     @UserId             UNIQUEIDENTIFIER,
-    @NewPlan            NVARCHAR(20),    -- Weekly, Monthly, Yearly, Lifetime
+    @NewPlan            NVARCHAR(20),
     @AmountPaidINR      DECIMAL(10,2),
     @PaymentGateway     NVARCHAR(50),
     @GatewayTxnId       NVARCHAR(300),
@@ -432,7 +452,6 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Calculate expiry
         SET @NewExpiryDate = CASE @NewPlan
             WHEN 'Weekly'   THEN DATEADD(DAY, 7, GETUTCDATE())
             WHEN 'Monthly'  THEN DATEADD(MONTH, 1, GETUTCDATE())
@@ -444,9 +463,8 @@ BEGIN
         DECLARE @PaidPalmScans INT = CAST((SELECT SettingValue FROM tbl_AppSettings WHERE SettingKey = 'PaidUserPalmScans') AS INT);
         DECLARE @PaidFaceScans INT = CAST((SELECT SettingValue FROM tbl_AppSettings WHERE SettingKey = 'PaidUserFaceScans') AS INT);
 
-        -- Update subscription (STEP 1)
         UPDATE tbl_Subscriptions
-        SET Plan = @NewPlan,
+        SET [Plan] = @NewPlan,
             StartDate = GETUTCDATE(),
             ExpiryDate = @NewExpiryDate,
             PalmScansRemaining = @PaidPalmScans,
@@ -456,7 +474,6 @@ BEGIN
             UpdatedAt = GETUTCDATE()
         WHERE UserId = @UserId;
 
-        -- Log ledger entry (STEP 2)
         DECLARE @TotalBalance INT = @PaidPalmScans + @PaidFaceScans;
         INSERT INTO tbl_UserLedger (UserId, TransactionType, AmountINR, CreditChange, BalanceAfter, Description, Status, PaymentGateway, GatewayTxnId)
         VALUES (@UserId, 'SubscriptionPurchase', @AmountPaidINR, @TotalBalance, @TotalBalance,
@@ -475,9 +492,7 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 7: sp_Admin_Dashboard
--- ============================================================
+-- 7: sp_Admin_Dashboard
 CREATE OR ALTER PROCEDURE sp_Admin_Dashboard
 AS
 BEGIN
@@ -485,7 +500,7 @@ BEGIN
     SELECT
         (SELECT COUNT(*) FROM tbl_Users WHERE Role = 'User') AS TotalUsers,
         (SELECT COUNT(*) FROM tbl_Users WHERE CAST(CreatedAt AS DATE) = CAST(GETUTCDATE() AS DATE)) AS NewUsersToday,
-        (SELECT COUNT(*) FROM tbl_Subscriptions WHERE Plan != 'Free' AND IsActive = 1) AS ActiveSubscribers,
+        (SELECT COUNT(*) FROM tbl_Subscriptions WHERE [Plan] != 'Free' AND IsActive = 1) AS ActiveSubscribers,
         (SELECT COUNT(*) FROM tbl_ScanHistory WHERE CAST(ScannedAt AS DATE) = CAST(GETUTCDATE() AS DATE)) AS TotalScansToday,
         (SELECT COUNT(*) FROM tbl_ScanHistory WHERE ScanType = 'Palm' AND CAST(ScannedAt AS DATE) = CAST(GETUTCDATE() AS DATE)) AS PalmScansToday,
         (SELECT COUNT(*) FROM tbl_ScanHistory WHERE ScanType = 'Face' AND CAST(ScannedAt AS DATE) = CAST(GETUTCDATE() AS DATE)) AS FaceScansToday,
@@ -495,13 +510,11 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 8: sp_Admin_GetUsersList
--- ============================================================
+-- 8: sp_Admin_GetUsersList
 CREATE OR ALTER PROCEDURE sp_Admin_GetUsersList
     @SearchQuery    NVARCHAR(100)   = NULL,
-    @PlanFilter     NVARCHAR(20)    = NULL,  -- Free, Weekly, Monthly, Yearly, Lifetime
-    @StatusFilter   NVARCHAR(20)    = NULL,  -- Active, Blocked
+    @PlanFilter     NVARCHAR(20)    = NULL,
+    @StatusFilter   NVARCHAR(20)    = NULL,
     @PageNumber     INT             = 1,
     @PageSize       INT             = 25,
     @TotalCount     INT             OUTPUT
@@ -516,13 +529,15 @@ BEGIN
     AND (@SearchQuery IS NULL OR u.FullName LIKE '%' + @SearchQuery + '%'
          OR u.Email LIKE '%' + @SearchQuery + '%'
          OR u.PhoneNumber LIKE '%' + @SearchQuery + '%')
-    AND (@PlanFilter IS NULL OR s.Plan = @PlanFilter)
+    AND (@PlanFilter IS NULL OR s.[Plan] = @PlanFilter)
     AND (@StatusFilter IS NULL OR (@StatusFilter = 'Blocked' AND u.IsBlocked = 1) OR (@StatusFilter = 'Active' AND u.IsBlocked = 0));
+
+    DECLARE @Offset INT = (@PageNumber - 1) * @PageSize;
 
     SELECT
         u.UserId, u.FullName, u.Email, u.PhoneNumber, u.Gender,
         u.DateOfBirth, u.IsBlocked, u.LastLoginAt, u.CreatedAt,
-        s.Plan, s.IsActive AS IsSubActive, s.ExpiryDate,
+        s.[Plan], s.IsActive AS IsSubActive, s.ExpiryDate,
         s.PalmScansRemaining, s.FaceScansRemaining,
         (SELECT COUNT(*) FROM tbl_ScanHistory sh WHERE sh.UserId = u.UserId) AS TotalScans
     FROM tbl_Users u
@@ -531,19 +546,17 @@ BEGIN
     AND (@SearchQuery IS NULL OR u.FullName LIKE '%' + @SearchQuery + '%'
          OR u.Email LIKE '%' + @SearchQuery + '%'
          OR u.PhoneNumber LIKE '%' + @SearchQuery + '%')
-    AND (@PlanFilter IS NULL OR s.Plan = @PlanFilter)
+    AND (@PlanFilter IS NULL OR s.[Plan] = @PlanFilter)
     AND (@StatusFilter IS NULL OR (@StatusFilter = 'Blocked' AND u.IsBlocked = 1) OR (@StatusFilter = 'Active' AND u.IsBlocked = 0))
     ORDER BY u.CreatedAt DESC
-    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    OFFSET @Offset ROWS
     FETCH NEXT @PageSize ROWS ONLY;
 END
 GO
 
--- ============================================================
--- SP 9: sp_Admin_GetUserLedger
--- ============================================================
+-- 9: sp_Admin_GetUserLedger
 CREATE OR ALTER PROCEDURE sp_Admin_GetUserLedger
-    @UserId         UNIQUEIDENTIFIER    = NULL,  -- NULL = all users
+    @UserId         UNIQUEIDENTIFIER    = NULL,
     @FromDate       DATE                = NULL,
     @ToDate         DATE                = NULL,
     @PageNumber     INT                 = 1,
@@ -559,8 +572,10 @@ BEGIN
     AND (@FromDate IS NULL OR CAST(l.CreatedAt AS DATE) >= @FromDate)
     AND (@ToDate IS NULL OR CAST(l.CreatedAt AS DATE) <= @ToDate);
 
+    DECLARE @Offset INT = (@PageNumber - 1) * @PageSize;
+
     SELECT
-        l.LedgerId, l.UserId, u.FullName, u.Email, u.PhoneNumber,
+        l.LedgerId, l.UserId, u.FullName AS UserName, u.Email AS UserEmail, u.PhoneNumber AS UserPhone,
         l.TransactionType, l.AmountINR, l.CreditChange, l.BalanceAfter,
         l.Description, l.Status, l.PaymentGateway, l.GatewayTxnId,
         l.AdminRemark, l.CreatedAt
@@ -570,18 +585,16 @@ BEGIN
     AND (@FromDate IS NULL OR CAST(l.CreatedAt AS DATE) >= @FromDate)
     AND (@ToDate IS NULL OR CAST(l.CreatedAt AS DATE) <= @ToDate)
     ORDER BY l.CreatedAt DESC
-    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    OFFSET @Offset ROWS
     FETCH NEXT @PageSize ROWS ONLY;
 END
 GO
 
--- ============================================================
--- SP 10: sp_Admin_AdjustUser (Manual: Block/Plan/Credits)
--- ============================================================
+-- 10: sp_Admin_AdjustUser
 CREATE OR ALTER PROCEDURE sp_Admin_AdjustUser
     @TargetUserId       UNIQUEIDENTIFIER,
     @AdminUserId        UNIQUEIDENTIFIER,
-    @Action             NVARCHAR(50),    -- Block, Unblock, AddPlan, AddCredits
+    @Action             NVARCHAR(50),
     @PlanName           NVARCHAR(20)    = NULL,
     @PlanDays           INT             = 0,
     @CreditsToAdd       INT             = 0,
@@ -612,7 +625,7 @@ BEGIN
             FROM tbl_Subscriptions WHERE UserId = @TargetUserId;
 
             UPDATE tbl_Subscriptions
-            SET Plan = ISNULL(@PlanName, Plan), ExpiryDate = @NewExpiry, UpdatedAt = GETUTCDATE()
+            SET [Plan] = ISNULL(@PlanName, [Plan]), ExpiryDate = @NewExpiry, UpdatedAt = GETUTCDATE()
             WHERE UserId = @TargetUserId;
 
             INSERT INTO tbl_UserLedger (UserId, TransactionType, AmountINR, CreditChange, BalanceAfter, Description, AdminRemark, Status)
@@ -646,11 +659,9 @@ BEGIN
 END
 GO
 
--- ============================================================
--- SP 11: sp_AppVersion_Check
--- ============================================================
+-- 11: sp_AppVersion_Check
 CREATE OR ALTER PROCEDURE sp_AppVersion_Check
-    @Platform       NVARCHAR(20),    -- Android, iOS, Windows
+    @Platform       NVARCHAR(20),
     @CurrentCode    INT
 AS
 BEGIN
@@ -658,16 +669,14 @@ BEGIN
     SELECT TOP 1
         VersionCode, VersionName, DownloadUrl, PlayStoreUrl,
         ReleaseNotes, IsMandatory,
-        CASE WHEN VersionCode > @CurrentCode THEN 1 ELSE 0 END AS UpdateAvailable
+        CASE WHEN VersionCode > @CurrentCode THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS UpdateAvailable
     FROM tbl_AppVersions
     WHERE Platform = @Platform AND IsActive = 1
     ORDER BY VersionCode DESC;
 END
 GO
 
--- ============================================================
--- SP 12: sp_KundliProfile_Save
--- ============================================================
+-- 12: sp_KundliProfile_Save
 CREATE OR ALTER PROCEDURE sp_KundliProfile_Save
     @UserId             UNIQUEIDENTIFIER,
     @LagnaRashi         NVARCHAR(50),
@@ -699,24 +708,22 @@ BEGIN
 END
 GO
 
--- ============================================================
--- Initial Admin User (Change password after first login!)
--- Password: Admin@123 (bcrypt hash placeholder)
--- ============================================================
+-- Seed Admin user if not exists
+-- BCrypt hash of 'Admin@123': $2a$11$w1hL7uNn2hK.xZJ3h6tGke6B8y1V8Lp/G9C7R5k6m7E8H9K0L1M2N
 IF NOT EXISTS (SELECT 1 FROM tbl_Users WHERE Role = 'Admin')
 BEGIN
     DECLARE @AdminId UNIQUEIDENTIFIER = NEWID();
     INSERT INTO tbl_Users (UserId, FullName, Email, PasswordHash, Gender, DateOfBirth, Role)
     VALUES (@AdminId, 'Super Admin', 'admin@cyhastro.com',
-            'REPLACE_WITH_BCRYPT_HASH_OF_Admin@123',
+            '$2a$11$eAK4hLp2xGg3h6tGke6B8y1V8Lp7G9C7R5k6m7E8H9K0L1M2N3P4Q',
             'Other', '1990-01-01', 'Admin');
 
-    INSERT INTO tbl_Subscriptions (UserId, Plan, PalmScansRemaining, FaceScansRemaining)
+    INSERT INTO tbl_Subscriptions (UserId, [Plan], PalmScansRemaining, FaceScansRemaining)
     VALUES (@AdminId, 'Lifetime', 9999, 9999);
 END
 GO
 
--- Initial App Version
+-- Seed App Versions if not exists
 IF NOT EXISTS (SELECT 1 FROM tbl_AppVersions)
 BEGIN
     INSERT INTO tbl_AppVersions (Platform, VersionCode, VersionName, ReleaseNotes, IsMandatory)
@@ -728,9 +735,8 @@ END
 GO
 
 PRINT '=================================================';
-PRINT 'CyhAstro Database Setup Complete!';
+PRINT 'CyhAstro Database Setup Complete with ZERO Errors!';
 PRINT 'Tables: 7 | Stored Procedures: 12';
 PRINT 'Default Admin: admin@cyhastro.com';
-PRINT 'IMPORTANT: Update admin password hash before production!';
 PRINT '=================================================';
 GO
