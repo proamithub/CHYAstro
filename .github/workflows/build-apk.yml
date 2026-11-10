@@ -20,6 +20,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
       - name: Build Debug APK
         working-directory: CyhAstro.Android
@@ -27,6 +29,7 @@ jobs:
           gradle assembleDebug --stacktrace
 
       - name: Upload APK Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: CyhAstro-Android-APK
