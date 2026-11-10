@@ -2,10 +2,15 @@ using CyhAstro.Core.DTOs;
 using CyhAstro.Core.Entities;
 using CyhAstro.Core.Interfaces;
 using CyhAstro.Infrastructure.Data;
+using CyhAstro.Infrastructure.Repositories;
 using CyhAstro.Infrastructure.Services;
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace CyhAstro.Admin.Pages.Admin;
 
@@ -18,6 +23,8 @@ public class AppSimulatorModel : PageModel
     private readonly IGeminiVisionService _gemini;
     private readonly ISubscriptionRepository _subRepo;
     private readonly ILocalizationService _localizer;
+    private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _config;
 
     public AppSimulatorModel(
         ISqlConnectionFactory db,
@@ -26,7 +33,9 @@ public class AppSimulatorModel : PageModel
         IVedicAstroService astroSvc,
         IGeminiVisionService gemini,
         ISubscriptionRepository subRepo,
-        ILocalizationService localizer)
+        ILocalizationService localizer,
+        IWebHostEnvironment env,
+        IConfiguration config)
     {
         _db = db;
         _userRepo = userRepo;
@@ -35,12 +44,16 @@ public class AppSimulatorModel : PageModel
         _gemini = gemini;
         _subRepo = subRepo;
         _localizer = localizer;
+        _env = env;
+        _config = config;
     }
 
     public UserProfileDto? TestUserProfile { get; set; }
     public KundliResultDto? KundliResult { get; set; }
     public PalmAnalysisDto? PalmResult { get; set; }
     public FaceAnalysisDto? FaceResult { get; set; }
+    public string? UploadedImageUrl { get; set; }
+    public string? GeneratedJwtToken { get; set; }
     public string ActiveTab { get; set; } = "palm";
     public string? AlertMessage { get; set; }
     public bool AlertSuccess { get; set; }
@@ -49,10 +62,18 @@ public class AppSimulatorModel : PageModel
     public async Task OnGetAsync(string tab = "palm")
     {
         ActiveTab = tab;
-        await LoadTestUserAsync();
+        await LoadActiveUserAsync();
     }
 
-    private async Task<Guid> GetOrCreateTestUserIdAsync()
+    private Guid GetCurrentSimUserId()
+    {
+        var sess = HttpContext.Session.GetString("SimUserId");
+        if (Guid.TryParse(sess, out var id) && id != Guid.Empty)
+            return id;
+        return Guid.Empty;
+    }
+
+    private async Task<Guid> GetOrCreateDefaultTestUserIdAsync()
     {
         using var conn = _db.CreateConnection();
         var id = await conn.QueryFirstOrDefaultAsync<Guid?>(
@@ -61,7 +82,7 @@ public class AppSimulatorModel : PageModel
         if (id.HasValue && id.Value != Guid.Empty)
             return id.Value;
 
-        // Create test mobile user with free credits
+        // Default test mobile user
         var testId = Guid.NewGuid();
         var hash = BCrypt.Net.BCrypt.HashPassword("Test@123", workFactor: 11);
         await conn.ExecuteAsync(@"
@@ -72,24 +93,297 @@ public class AppSimulatorModel : PageModel
             VALUES (@UserId, 'Free', 3, 1);
 
             INSERT INTO tbl_UserLedger (UserId, TransactionType, AmountINR, CreditChange, BalanceAfter, Description, Status)
-            VALUES (@UserId, 'WelcomeCredit', 0, 4, 4, 'Test user initialized with free credits.', 'Success');
+            VALUES (@UserId, 'WelcomeCredit', 0, 4, 4, 'Welcome test account with 3 free Palm and 1 Face scans.', 'Success');
         ", new { UserId = testId, Hash = hash });
 
         return testId;
     }
 
-    private async Task LoadTestUserAsync()
+    private async Task LoadActiveUserAsync()
     {
-        var testId = await GetOrCreateTestUserIdAsync();
-        TestUserProfile = await _userRepo.GetProfileAsync(testId);
+        var uid = GetCurrentSimUserId();
+        if (uid == Guid.Empty)
+        {
+            uid = await GetOrCreateDefaultTestUserIdAsync();
+            HttpContext.Session.SetString("SimUserId", uid.ToString());
+        }
+
+        TestUserProfile = await _userRepo.GetProfileAsync(uid);
+        GeneratedJwtToken = HttpContext.Session.GetString("SimJwtToken");
     }
 
-    // ── 1. TEST KUNDLI CALCULATION ─────────────────
+    // ── 1. USER LOGIN IN SIMULATOR ─────────────────
+    public async Task<IActionResult> OnPostLoginAsync(string emailOrPhone, string password)
+    {
+        ActiveTab = "auth";
+
+        if (string.IsNullOrWhiteSpace(emailOrPhone) || string.IsNullOrWhiteSpace(password))
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("MissingEmailOrPhoneLogin");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        emailOrPhone = emailOrPhone.Trim();
+        password = password.Trim();
+
+        var userRepo = (UserRepository)_userRepo;
+        bool isEmail = emailOrPhone.Contains('@');
+        var (hash, userId, role, isBlocked) = await userRepo.GetLoginDataAsync(
+            isEmail ? emailOrPhone : null,
+            !isEmail ? emailOrPhone : null);
+
+        if (hash == null || userId == null)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("UserNotFound");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        if (isBlocked)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("AccountBlocked");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(password, hash))
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("InvalidPassword");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        var profile = await _userRepo.GetProfileAsync(userId.Value);
+        var token = CreateJwtToken(userId.Value, profile!.FullName, role ?? "User");
+
+        HttpContext.Session.SetString("SimUserId", userId.Value.ToString());
+        HttpContext.Session.SetString("SimJwtToken", token);
+
+        await LoadActiveUserAsync();
+        AlertSuccess = true;
+        AlertMessage = _localizer.Get("LoginSuccess", profile.FullName);
+        return Page();
+    }
+
+    // ── 2. USER REGISTER IN SIMULATOR ──────────────
+    public async Task<IActionResult> OnPostRegisterAsync(
+        string fullName, string email, string phone, string password, string gender, string dob)
+    {
+        ActiveTab = "auth";
+
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("MissingEmailOrPhone");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("PasswordMinLength");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        var birthDate = DateOnly.TryParse(dob, out var d) ? d : new DateOnly(1995, 1, 1);
+        var req = new RegisterRequest(
+            FullName: fullName ?? "App User",
+            Email: string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+            PhoneNumber: string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
+            Password: password,
+            Gender: gender ?? "Male",
+            DateOfBirth: birthDate,
+            TimeOfBirth: null,
+            BirthCity: "New Delhi",
+            BirthLatitude: 28.6139m,
+            BirthLongitude: 77.2090m,
+            DeviceToken: "Simulated_Device_Token_" + Guid.NewGuid().ToString("N")[..8]
+        );
+
+        var (code, newUserId) = await _userRepo.RegisterOrLoginAsync(req);
+        if (code == -1 || newUserId == null)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("ServerError");
+            await LoadActiveUserAsync();
+            return Page();
+        }
+
+        var profile = await _userRepo.GetProfileAsync(newUserId.Value);
+        var token = CreateJwtToken(newUserId.Value, profile!.FullName, "User");
+
+        HttpContext.Session.SetString("SimUserId", newUserId.Value.ToString());
+        HttpContext.Session.SetString("SimJwtToken", token);
+
+        await LoadActiveUserAsync();
+        AlertSuccess = true;
+        AlertMessage = _localizer.Get("RegistrationSuccess");
+        return Page();
+    }
+
+    // ── 3. USER LOGOUT IN SIMULATOR ────────────────
+    public async Task<IActionResult> OnPostLogoutAsync()
+    {
+        ActiveTab = "auth";
+        HttpContext.Session.Remove("SimUserId");
+        HttpContext.Session.Remove("SimJwtToken");
+        await LoadActiveUserAsync();
+        AlertSuccess = true;
+        AlertMessage = "Aap app se log out ho gaye hain. Ab naye account se login/register karein.";
+        return Page();
+    }
+
+    // ── 4. REAL PALM SCAN (IMAGE REQUIRED) ────────
+    public async Task<IActionResult> OnPostScanPalmAsync(IFormFile? palmImage, string handSide = "Right")
+    {
+        ActiveTab = "palm";
+        await LoadActiveUserAsync();
+
+        // STRICT VALIDATION: Photo zaroori hai!
+        if (palmImage == null || palmImage.Length == 0)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("ImageRequired") + " (Kripya pehle apne haath ki photo choose karein)";
+            return Page();
+        }
+
+        if (!IsValidImage(palmImage.ContentType))
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("InvalidImageFormat");
+            return Page();
+        }
+
+        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
+        bool isPremium = TestUserProfile?.IsSubscriptionActive == true && TestUserProfile.Plan != "Free";
+
+        // Save real image to wwwroot/uploads
+        var (imageRelPath, thumbRelPath) = await SaveUploadedFileAsync(palmImage, userId, "palm");
+        UploadedImageUrl = imageRelPath;
+
+        try
+        {
+            await using var stream = palmImage.OpenReadStream();
+            PalmResult = await _gemini.AnalyzePalmAsync(stream, palmImage.ContentType, isPremium);
+        }
+        catch (Exception ex)
+        {
+            AlertSuccess = false;
+            AlertMessage = "Gemini AI call failed: " + ex.Message;
+            return Page();
+        }
+
+        var summaryText = PalmResult?.LifeLine?.Summary ?? "Palm scan complete";
+
+        // Deduct 1 credit & save scan to DB
+        var (resultCode, scanId, creditsLeft) = await _scanRepo.SaveScanAsync(
+            userId, "Palm", handSide,
+            imageRelPath, thumbRelPath,
+            System.Text.Json.JsonSerializer.Serialize(PalmResult),
+            summaryText);
+
+        await LoadActiveUserAsync();
+
+        if (resultCode == 1)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("PalmCreditsExhausted");
+        }
+        else
+        {
+            AlertSuccess = true;
+            AlertMessage = _localizer.CurrentLanguage switch
+            {
+                "Hindi" => "हस्तरेखा फोटो का सफल विश्लेषण! AI ने रेखाओं और पर्वतों को स्कैन किया।",
+                "English" => "Palm image successfully analyzed by Google Gemini Vision AI!",
+                _ => "Palm photo successfully analyze ho gayi! Gemini Vision AI ne rekhaayein padh li hain."
+            };
+        }
+
+        return Page();
+    }
+
+    // ── 5. REAL FACE SCAN (IMAGE REQUIRED) ────────
+    public async Task<IActionResult> OnPostScanFaceAsync(IFormFile? faceImage)
+    {
+        ActiveTab = "face";
+        await LoadActiveUserAsync();
+
+        // STRICT VALIDATION: Photo zaroori hai!
+        if (faceImage == null || faceImage.Length == 0)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("ImageRequired") + " (Kripya pehle apne chehre ki photo choose karein)";
+            return Page();
+        }
+
+        if (!IsValidImage(faceImage.ContentType))
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("InvalidImageFormat");
+            return Page();
+        }
+
+        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
+        bool isPremium = TestUserProfile?.IsSubscriptionActive == true && TestUserProfile.Plan != "Free";
+
+        var (imageRelPath, thumbRelPath) = await SaveUploadedFileAsync(faceImage, userId, "face");
+        UploadedImageUrl = imageRelPath;
+
+        try
+        {
+            await using var stream = faceImage.OpenReadStream();
+            FaceResult = await _gemini.AnalyzeFaceAsync(stream, faceImage.ContentType, isPremium);
+        }
+        catch (Exception ex)
+        {
+            AlertSuccess = false;
+            AlertMessage = "Gemini AI call failed: " + ex.Message;
+            return Page();
+        }
+
+        var summaryText = FaceResult?.Forehead?.Summary ?? "Face scan complete";
+
+        var (resultCode, scanId, creditsLeft) = await _scanRepo.SaveScanAsync(
+            userId, "Face", null,
+            imageRelPath, thumbRelPath,
+            System.Text.Json.JsonSerializer.Serialize(FaceResult),
+            summaryText);
+
+        await LoadActiveUserAsync();
+
+        if (resultCode == 1)
+        {
+            AlertSuccess = false;
+            AlertMessage = _localizer.Get("FaceCreditsExhausted");
+        }
+        else
+        {
+            AlertSuccess = true;
+            AlertMessage = _localizer.CurrentLanguage switch
+            {
+                "Hindi" => "सामुद्रिक शास्त्र (चेहरा) फोटो का सफल विश्लेषण! AI ने मस्तक और नयन को स्कैन किया।",
+                "English" => "Face image successfully analyzed by Samudrik Shastra AI!",
+                _ => "Face photo successfully analyze ho gayi! Samudrik Shastra AI ne chehre ke zones padh liye."
+            };
+        }
+
+        return Page();
+    }
+
+    // ── 6. KUNDLI CALCULATION ──────────────────────
     public async Task<IActionResult> OnPostCalculateKundliAsync(
         string dob, string tob, string city, double lat = 28.6139, double lng = 77.2090)
     {
         ActiveTab = "kundli";
-        await LoadTestUserAsync();
+        await LoadActiveUserAsync();
 
         if (string.IsNullOrWhiteSpace(dob)) dob = "1995-08-15";
         if (string.IsNullOrWhiteSpace(tob)) tob = "14:30";
@@ -101,135 +395,43 @@ public class AppSimulatorModel : PageModel
         AlertSuccess = true;
         AlertMessage = _localizer.CurrentLanguage switch
         {
-            "Hindi" => $"कुंडली सफलतापूर्वक बनाई गई! लग्न: {KundliResult.LagnaRashi}, राशि: {KundliResult.MoonRashi}, नक्षत्र: {KundliResult.Nakshatra}",
-            "English" => $"Kundli calculated! Ascendant: {KundliResult.LagnaRashi}, Moon Sign: {KundliResult.MoonRashi}, Nakshatra: {KundliResult.Nakshatra}",
-            _ => $"Kundli calculate ho gayi! Lagna: {KundliResult.LagnaRashi}, Rashi: {KundliResult.MoonRashi}, Nakshatra: {KundliResult.Nakshatra}"
+            "Hindi" => $"कुंडली गणना पूर्ण! लग्न: {KundliResult.LagnaRashi}, राशि: {KundliResult.MoonRashi}, नक्षत्र: {KundliResult.Nakshatra}",
+            "English" => $"Kundli calculated! Ascendant: {KundliResult.LagnaRashi}, Moon: {KundliResult.MoonRashi}, Nakshatra: {KundliResult.Nakshatra}",
+            _ => $"Kundli calculation complete! Lagna: {KundliResult.LagnaRashi}, Rashi: {KundliResult.MoonRashi}, Nakshatra: {KundliResult.Nakshatra}"
         };
 
         return Page();
     }
 
-    // ── 2. TEST PALM SCAN ──────────────────────────
-    public async Task<IActionResult> OnPostScanPalmAsync(IFormFile? palmImage, string handSide = "Right")
-    {
-        ActiveTab = "palm";
-        await LoadTestUserAsync();
-
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateTestUserIdAsync();
-        bool isPremium = TestUserProfile?.IsSubscriptionActive == true && TestUserProfile.Plan != "Free";
-
-        if (palmImage != null && palmImage.Length > 0)
-        {
-            try
-            {
-                await using var stream = palmImage.OpenReadStream();
-                PalmResult = await _gemini.AnalyzePalmAsync(stream, palmImage.ContentType, isPremium);
-            }
-            catch
-            {
-                // Fallback simulation if API key limit or offline
-                PalmResult = GetMockPalmResult(isPremium);
-            }
-        }
-        else
-        {
-            // Sample test simulation
-            PalmResult = GetMockPalmResult(isPremium);
-        }
-
-        // Deduct 1 credit & save scan
-        await _scanRepo.SaveScanAsync(
-            userId, "Palm", handSide,
-            "/uploads/samples/sample_palm.jpg", "/uploads/samples/thumb_palm.jpg",
-            System.Text.Json.JsonSerializer.Serialize(PalmResult),
-            PalmResult?.LifeLine?.Summary ?? "Palm scan complete");
-
-        await LoadTestUserAsync();
-        AlertSuccess = true;
-        AlertMessage = _localizer.CurrentLanguage switch
-        {
-            "Hindi" => "हस्तरेखा स्कैन पूर्ण हुआ! AI ने जीवन, मस्तिष्क और हृदय रेखा का विश्लेषण किया।",
-            "English" => "Palm scan complete! AI successfully analyzed your Life, Head, and Heart lines.",
-            _ => "Palm scan complete! AI ne Jeevan, Mastishk aur Hriday rekha analyze kar li."
-        };
-
-        return Page();
-    }
-
-    // ── 3. TEST FACE SCAN ──────────────────────────
-    public async Task<IActionResult> OnPostScanFaceAsync(IFormFile? faceImage)
-    {
-        ActiveTab = "face";
-        await LoadTestUserAsync();
-
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateTestUserIdAsync();
-        bool isPremium = TestUserProfile?.IsSubscriptionActive == true && TestUserProfile.Plan != "Free";
-
-        if (faceImage != null && faceImage.Length > 0)
-        {
-            try
-            {
-                await using var stream = faceImage.OpenReadStream();
-                FaceResult = await _gemini.AnalyzeFaceAsync(stream, faceImage.ContentType, isPremium);
-            }
-            catch
-            {
-                FaceResult = GetMockFaceResult(isPremium);
-            }
-        }
-        else
-        {
-            FaceResult = GetMockFaceResult(isPremium);
-        }
-
-        await _scanRepo.SaveScanAsync(
-            userId, "Face", null,
-            "/uploads/samples/sample_face.jpg", "/uploads/samples/thumb_face.jpg",
-            System.Text.Json.JsonSerializer.Serialize(FaceResult),
-            FaceResult?.Forehead?.Summary ?? "Face scan complete");
-
-        await LoadTestUserAsync();
-        AlertSuccess = true;
-        AlertMessage = _localizer.CurrentLanguage switch
-        {
-            "Hindi" => "सामुद्रिक शास्त्र (चेहरा) स्कैन पूर्ण हुआ! AI ने मस्तक और नयन का विश्लेषण किया।",
-            "English" => "Face scan complete! Samudrik Shastra AI successfully analyzed facial zones.",
-            _ => "Face scan complete! Samudrik Shastra AI ne chehre ke zones analyze kar liye."
-        };
-
-        return Page();
-    }
-
-    // ── 4. TEST SUBSCRIPTION UPGRADE ──────────────
+    // ── 7. SUBSCRIPTION UPGRADE ────────────────────
     public async Task<IActionResult> OnPostUpgradeAsync(string plan)
     {
         ActiveTab = "wallet";
-        await LoadTestUserAsync();
+        await LoadActiveUserAsync();
 
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateTestUserIdAsync();
+        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
         decimal amount = plan switch { "Weekly" => 99, "Monthly" => 299, "Yearly" => 1999, _ => 4999 };
 
         await _subRepo.UpgradePlanAsync(new SubscriptionUpgradeRequest(
             userId,
             plan,
             amount,
-            "TestSimulatedRazorpay",
-            "TXN_SIM_" + DateTime.UtcNow.Ticks
+            "RazorpaySimulator",
+            "TXN_APP_" + DateTime.UtcNow.Ticks
         ));
 
-        await LoadTestUserAsync();
+        await LoadActiveUserAsync();
         AlertSuccess = true;
         AlertMessage = _localizer.Get("PlanActivated", plan);
-
         return Page();
     }
 
-    // ── 5. TEST RESET CREDITS ──────────────────────
+    // ── 8. RESET CREDITS ───────────────────────────
     public async Task<IActionResult> OnPostResetCreditsAsync()
     {
         ActiveTab = "wallet";
-        await LoadTestUserAsync();
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateTestUserIdAsync();
+        await LoadActiveUserAsync();
+        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
 
         using var conn = _db.CreateConnection();
         await conn.ExecuteAsync(@"
@@ -238,38 +440,53 @@ public class AppSimulatorModel : PageModel
             WHERE UserId = @UserId;
         ", new { UserId = userId });
 
-        await LoadTestUserAsync();
+        await LoadActiveUserAsync();
         AlertSuccess = true;
-        AlertMessage = "Test user reset to Free plan with 3 Palm & 1 Face scan credits.";
+        AlertMessage = "User plan reset to Free with 3 Palm and 1 Face scan credits.";
         return Page();
     }
 
-    private PalmAnalysisDto GetMockPalmResult(bool isPremium) => new()
+    private async Task<(string relativePath, string thumbPath)> SaveUploadedFileAsync(IFormFile file, Guid userId, string type)
     {
-        LifeLine = new() { Strength = "Strong", Summary = _localizer.CurrentLanguage == "Hindi" ? "जीवन रेखा लंबी, गहरी और सुदृढ़ है। उत्तम स्वास्थ्य और दीर्घायु के योग हैं।" : (_localizer.CurrentLanguage == "English" ? "Long, clear, and deep life line indicating vitality and resilience." : "Jeevan rekha lambi aur spasht hai. Achhi sehat aur dirghayu ke sanket hain."), Insights = new() { "Vitality: 88%", "Good stamina & family support" } },
-        HeadLine = new() { Strength = "Strong", Summary = _localizer.CurrentLanguage == "Hindi" ? "मस्तिष्क रेखा स्पष्ट है। गहरी तार्किक सोच और निर्णय क्षमता को दर्शाती है।" : (_localizer.CurrentLanguage == "English" ? "Deep headline curving gently towards Moon mount, showing balanced logic and creativity." : "Mastishk rekha spasht hai. Logical thinking aur sahi decisions lene ki shamta darshati hai."), Insights = new() { "Analytical Thinking: High", "Focus in career" } },
-        HeartLine = new() { Strength = "Moderate", Summary = _localizer.CurrentLanguage == "Hindi" ? "हृदय रेखा गुरु पर्वत की ओर जाती है। निष्ठावान और संवेदनशील व्यक्तित्व।" : (_localizer.CurrentLanguage == "English" ? "Heart line curves toward Jupiter mount showing loyalty, devotion, and compassion." : "Hriday rekha Guru parvat ki taraf mudti hai. Wafadar aur bhavuk vyaktitva."), Insights = new() { "Emotional depth", "Stable relationships" } },
-        FateLine = isPremium ? new() { Strength = "Strong", Summary = _localizer.CurrentLanguage == "Hindi" ? "भाग्य रेखा स्पष्ट है। 28वें वर्ष से करियर में तीव्र प्रगति के संकेत हैं।" : (_localizer.CurrentLanguage == "English" ? "Prominent fate line showing rapid career advancement from age 28 onwards." : "Bhagya rekha saaf hai. 28 saal ki umar se career me tezi se vridhi ke sanket hain."), Insights = new() { "Career Peak: Age 32-45", "Independent business success" } }
-                             : new() { IsLocked = true, Summary = _localizer.Get("FateLineLocked") },
-        MountJupiter = isPremium ? new() { Strength = "Developed", Summary = "Guru Parvat unnat hai. Leadership aur samajik samman milega." } : new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
-        MountVenus = isPremium ? new() { Strength = "Developed", Summary = "Shukra Parvat sundar hai. Kala, soundarya aur aakarshan ki kshamta." } : new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
-        MountSun = isPremium ? new() { Strength = "Prominent", Summary = "Surya Parvat tejasvi hai. Naam, shohrat aur prashansa milegi." } : new() { IsLocked = true, Summary = _localizer.Get("MountLocked") }
-    };
+        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        var folder = Path.Combine(webRoot, "uploads", userId.ToString(), type);
+        Directory.CreateDirectory(folder);
 
-    private FaceAnalysisDto GetMockFaceResult(bool isPremium) => isPremium ? new()
+        var fileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
+        var fullPath = Path.Combine(folder, fileName);
+
+        await using (var fs = new FileStream(fullPath, FileMode.Create))
+            await file.CopyToAsync(fs);
+
+        var relativePath = $"/uploads/{userId}/{type}/{fileName}";
+        return (relativePath, relativePath);
+    }
+
+    private static bool IsValidImage(string? contentType) =>
+        contentType is "image/jpeg" or "image/png" or "image/webp" or "image/jpg";
+
+    private string CreateJwtToken(Guid userId, string fullName, string role)
     {
-        Forehead = new() { Trait = "Visionary Intellect", Summary = _localizer.CurrentLanguage == "Hindi" ? "मस्तक चौड़ा और स्पष्ट है। उच्च बुद्धि और पूर्वजों के आशीर्वाद का प्रतीक।" : "Chowda aur spasht mastak. Tejasvi dimaag aur durdarshi soch.", Insight = "Destiny supports leadership roles" },
-        Eyes = new() { Trait = "Deep Perception", Summary = "Aankhein chamakdaar aur tejasvi hain. Gehre vishleshan ki kshamta.", Insight = "Intuition is extraordinarily sharp" },
-        Nose = new() { Trait = "Wealth Accumulator", Summary = "Naak seedhi aur moolyavaan hai. Dhan sanchay aur aatmavishwas ka sanket.", Insight = "Financial independence guaranteed" },
-        LipsAndMouth = new() { Trait = "Eloquence", Summary = "Honth santulit hain. Madhur vaani aur prabhavshaali communication.", Insight = "Success in public speaking & business" },
-        JawAndChin = new() { Trait = "Unshakable Willpower", Summary = "Mazboot thodi. Kathin paristhitiyon me haar na manne ka sanket.", Insight = "Long-term determination" }
-    } : new()
-    {
-        Forehead = new() { IsLocked = true, Summary = _localizer.Get("FaceReadingLocked") },
-        Eyebrows = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
-        Eyes = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
-        Nose = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
-        LipsAndMouth = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
-        JawAndChin = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") }
-    };
+        var key = _config["JwtSettings:SecretKey"] ?? "PassCyh123456789987654321987654321";
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Name, fullName),
+                new Claim(ClaimTypes.Role, role)
+            }),
+            Expires = DateTime.UtcNow.AddDays(30),
+            Issuer = _config["JwtSettings:Issuer"] ?? "CyhAstro",
+            Audience = _config["JwtSettings:Audience"] ?? "CyhAstroUsers",
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
+    }
 }

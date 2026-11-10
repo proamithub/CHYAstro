@@ -9,9 +9,9 @@
 <style>
     /* Phone frame simulation */
     .phone-mockup {
-        width: 390px;
+        width: 400px;
         max-width: 100%;
-        min-height: 740px;
+        min-height: 760px;
         background: #0d0820;
         border: 12px solid #201738;
         border-radius: 46px;
@@ -38,30 +38,31 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
-        max-height: 680px;
+        max-height: 700px;
     }
     .phone-header {
         text-align: center;
-        padding-bottom: 12px;
+        padding-bottom: 10px;
         border-bottom: 1px solid var(--border-color);
-        margin-bottom: 14px;
+        margin-bottom: 12px;
     }
     .phone-bottom-nav {
         display: flex;
         justify-content: space-around;
         background: rgba(18, 13, 42, 0.95);
         border-top: 1px solid var(--border-color);
-        padding: 10px 6px 14px;
+        padding: 10px 4px 14px;
     }
     .nav-tab-btn {
         background: transparent;
         border: none;
         color: var(--text-muted);
-        font-size: 0.68rem;
+        font-size: 0.65rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
+        text-decoration: none;
         transition: all 0.2s;
     }
     .nav-tab-btn i { font-size: 1.15rem; }
@@ -77,7 +78,7 @@
 
 @if (!string.IsNullOrEmpty(Model.AlertMessage))
 {
-    <div class="alert-cosmic mb-3 p-3 @(Model.AlertSuccess ? "" : "border-danger")" role="alert">
+    <div class="alert-cosmic mb-3 p-3 @(Model.AlertSuccess ? "" : "border-danger text-danger")" role="alert">
         @(Model.AlertSuccess ? "✨ " : "⚠️ ") @Model.AlertMessage
     </div>
 }
@@ -93,23 +94,32 @@
                 <div class="phone-header">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span style="font-size:0.7rem; color:var(--text-muted);"><i class="bi bi-clock me-1"></i>@(DateTime.Now.ToString("hh:mm tt"))</span>
-                        <span class="badge @(Model.TestUserProfile?.Plan == "Free" ? "bg-secondary" : "bg-warning text-dark") test-badge">
-                            @(Model.TestUserProfile?.Plan ?? "Free") Plan
-                        </span>
+                        <a href="/Admin/AppSimulator?tab=auth" class="badge @(Model.TestUserProfile?.Plan == "Free" ? "bg-secondary" : "bg-warning text-dark") test-badge text-decoration-none">
+                            @(Model.TestUserProfile?.Plan ?? "Free") Plan <i class="bi bi-arrow-right-short"></i>
+                        </a>
                         <span style="font-size:0.7rem; color:var(--accent-green);"><i class="bi bi-battery-full"></i> 100%</span>
                     </div>
-                    <div style="font-family:'Cinzel', serif; font-size:1.1rem; color:var(--accent-gold); font-weight:700;">
-                        ✦ CYHASTRO ✦
+
+                    <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                        <div class="text-start">
+                            <div style="font-family:'Cinzel', serif; font-size:1rem; color:var(--accent-gold); font-weight:700;">
+                                ✦ CYHASTRO ✦
+                            </div>
+                            <div style="font-size:0.68rem; color:var(--text-muted);">
+                                User: <strong class="text-light">@(Model.TestUserProfile?.FullName ?? "Not Logged In")</strong>
+                            </div>
+                        </div>
+                        <a href="/Admin/AppSimulator?tab=auth" class="btn btn-outline-warning btn-sm py-0 px-2" style="font-size:0.65rem;">
+                            <i class="bi bi-person-circle me-1"></i>Login / Switch
+                        </a>
                     </div>
-                    <div style="font-size:0.7rem; color:var(--text-muted);">
-                        Vedic Astrology & Biometric AI
-                    </div>
+
                     <div class="mt-2 d-flex justify-content-center gap-2">
                         <span class="badge bg-dark border border-secondary" style="font-size:0.65rem;">
-                            ✋ Palm Scans: <strong>@(Model.TestUserProfile?.PalmScansRemaining ?? 0)</strong>
+                            ✋ Palm: <strong>@(Model.TestUserProfile?.PalmScansRemaining ?? 0)</strong>
                         </span>
                         <span class="badge bg-dark border border-secondary" style="font-size:0.65rem;">
-                            👤 Face Scans: <strong>@(Model.TestUserProfile?.FaceScansRemaining ?? 0)</strong>
+                            👤 Face: <strong>@(Model.TestUserProfile?.FaceScansRemaining ?? 0)</strong>
                         </span>
                     </div>
                 </div>
@@ -120,10 +130,10 @@
                     <div>
                         <div class="text-center mb-3">
                             <h6 style="color:var(--accent-gold); font-size:0.95rem; margin-bottom:4px;">
-                                ✋ हस्तरेखा स्कैनर (Palmistry AI)
+                                ✋ हस्तरेखा स्कैनर (Palmistry Vision AI)
                             </h6>
                             <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
-                                Apni hatheli ki photo upload karein ya test sample scan karein.
+                                Apni hatheli ki asli photo choose karein. Gemini Vision AI image ke pixels scan karega.
                             </p>
                         </div>
 
@@ -131,7 +141,7 @@
                             @Html.AntiForgeryToken()
                             <div class="mb-3 text-center">
                                 <label class="form-label" style="font-size:0.72rem; color:var(--text-muted);">SELECT HAND</label>
-                                <div class="d-flex justify-content-center gap-2">
+                                <div class="d-flex justify-content-center gap-3">
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="handSide" id="handRight" value="Right" checked>
                                         <label class="form-check-label" for="handRight" style="font-size:0.8rem;">Right (दायां)</label>
@@ -144,22 +154,32 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:0.72rem; color:var(--text-muted);">UPLOAD IMAGE (OPTIONAL)</label>
-                                <input type="file" name="palmImage" accept="image/*" class="form-control cosmic-input form-control-sm" />
-                                <small class="text-muted d-block mt-1" style="font-size:0.65rem;">
-                                    Agar photo choose nahi karenge toh built-in test sample use hoga.
+                                <label class="form-label text-warning fw-bold" style="font-size:0.72rem;">
+                                    <i class="bi bi-camera-fill me-1"></i>CHOOSE PALM IMAGE (REQUIRED)
+                                </label>
+                                <input type="file" name="palmImage" accept="image/jpeg,image/png,image/webp" class="form-control cosmic-input form-control-sm" required />
+                                <small class="text-muted d-block mt-1" style="font-size:0.68rem;">
+                                    ⚠️ Bina photo upload kiye AI analyze nahi karega. Real photo select karein.
                                 </small>
                             </div>
 
                             <button type="submit" class="btn btn-gold w-100 py-2 mb-3">
-                                <i class="bi bi-camera me-1"></i> Scan & Analyze Palm
+                                <i class="bi bi-camera me-1"></i> Upload & Analyze with Gemini AI
                             </button>
                         </form>
 
                         @if (Model.PalmResult != null)
                         {
-                            <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.8);">
-                                <div class="fw-bold mb-2 text-gold" style="font-size:0.85rem;">✦ AI Palmistry Analysis ✦</div>
+                            <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.9);">
+                                @if (!string.IsNullOrEmpty(Model.UploadedImageUrl))
+                                {
+                                    <div class="text-center mb-2">
+                                        <img src="@Model.UploadedImageUrl" class="rounded border border-warning" style="max-height:120px; max-width:100%; object-fit:cover;" alt="Uploaded Palm" />
+                                        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:3px;">Analyzed Image</div>
+                                    </div>
+                                }
+
+                                <div class="fw-bold mb-2 text-gold text-center" style="font-size:0.85rem;">✦ Google Gemini AI Analysis ✦</div>
 
                                 <div class="mb-2 pb-2 border-bottom border-dark">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -190,7 +210,7 @@
                                         <span style="font-size:0.75rem; color:var(--accent-gold);">भाग्य रेखा (Fate Line)</span>
                                         @if (Model.PalmResult.FateLine.IsLocked)
                                         {
-                                            <span class="badge bg-warning text-dark" style="font-size:0.65rem;">🔒 Locked</span>
+                                            <span class="badge bg-warning text-dark" style="font-size:0.65rem;">🔒 Locked (Premium)</span>
                                         }
                                         else
                                         {
@@ -213,29 +233,39 @@
                                 👤 सामुद्रिक शास्त्र (Face Reading AI)
                             </h6>
                             <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
-                                Chehre ke naksh, mathe aur aakhon ka Vedic physiognomy analysis.
+                                Chehre ya selfie ki photo choose karein. AI facial zones analyze karega.
                             </p>
                         </div>
 
                         <form method="post" asp-page-handler="ScanFace" enctype="multipart/form-data">
                             @Html.AntiForgeryToken()
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:0.72rem; color:var(--text-muted);">UPLOAD SELFIE / FACE PHOTO</label>
-                                <input type="file" name="faceImage" accept="image/*" class="form-control cosmic-input form-control-sm" />
-                                <small class="text-muted d-block mt-1" style="font-size:0.65rem;">
-                                    Photo select na karne par sample face test data use hoga.
+                                <label class="form-label text-warning fw-bold" style="font-size:0.72rem;">
+                                    <i class="bi bi-camera-fill me-1"></i>CHOOSE FACE PHOTO (REQUIRED)
+                                </label>
+                                <input type="file" name="faceImage" accept="image/jpeg,image/png,image/webp" class="form-control cosmic-input form-control-sm" required />
+                                <small class="text-muted d-block mt-1" style="font-size:0.68rem;">
+                                    ⚠️ Photo zaroori hai. Image select karke hi scan chalega.
                                 </small>
                             </div>
 
                             <button type="submit" class="btn btn-gold w-100 py-2 mb-3">
-                                <i class="bi bi-person-bounding-box me-1"></i> Scan & Read Face
+                                <i class="bi bi-person-bounding-box me-1"></i> Upload & Read Face
                             </button>
                         </form>
 
                         @if (Model.FaceResult != null)
                         {
-                            <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.8);">
-                                <div class="fw-bold mb-2 text-gold" style="font-size:0.85rem;">✦ Samudrik Shastra Insights ✦</div>
+                            <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.9);">
+                                @if (!string.IsNullOrEmpty(Model.UploadedImageUrl))
+                                {
+                                    <div class="text-center mb-2">
+                                        <img src="@Model.UploadedImageUrl" class="rounded border border-warning" style="max-height:120px; max-width:100%; object-fit:cover;" alt="Uploaded Face" />
+                                        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:3px;">Analyzed Face Image</div>
+                                    </div>
+                                }
+
+                                <div class="fw-bold mb-2 text-gold text-center" style="font-size:0.85rem;">✦ Samudrik Shastra Insights ✦</div>
 
                                 <div class="mb-2 pb-2 border-bottom border-dark">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -274,7 +304,7 @@
                                 🔮 वैदिक जन्म कुंडली (Vedic Chart)
                             </h6>
                             <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
-                                100% Free Astronomical Math Engine (No External API required).
+                                100% Free Astronomical Math Engine (No Paid API).
                             </p>
                         </div>
 
@@ -282,11 +312,11 @@
                             @Html.AntiForgeryToken()
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
-                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">DATE OF BIRTH</label>
+                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">DOB</label>
                                     <input type="date" name="dob" value="1995-08-15" class="form-control cosmic-input form-control-sm" required />
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">TIME OF BIRTH</label>
+                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">TIME</label>
                                     <input type="time" name="tob" value="14:30" class="form-control cosmic-input form-control-sm" required />
                                 </div>
                             </div>
@@ -303,7 +333,7 @@
 
                         @if (Model.KundliResult != null)
                         {
-                            <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.8);">
+                            <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.9);">
                                 <div class="fw-bold mb-2 text-gold text-center" style="font-size:0.85rem;">✦ लग्न व ग्रह स्थिति ✦</div>
                                 <div class="row g-2 text-center mb-2">
                                     <div class="col-4 p-1">
@@ -314,7 +344,7 @@
                                     </div>
                                     <div class="col-4 p-1">
                                         <div class="p-2 border border-secondary rounded">
-                                            <div style="font-size:0.65rem; color:var(--text-muted);">चंद्र राशि (Moon)</div>
+                                            <div style="font-size:0.65rem; color:var(--text-muted);">चंद्र (Moon)</div>
                                             <div class="fw-bold text-teal" style="font-size:0.75rem;">@Model.KundliResult.MoonRashi</div>
                                         </div>
                                     </div>
@@ -355,16 +385,16 @@
                     <div>
                         <div class="text-center mb-3">
                             <h6 style="color:var(--accent-gold); font-size:0.95rem; margin-bottom:4px;">
-                                💳 सब्सक्रिप्शन व वॉलेट (Subscription Test)
+                                💳 सब्सक्रिप्शन व वॉलेट (Subscription)
                             </h6>
                             <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
-                                Test user ke plan ko 1-click upgrade ya reset karein.
+                                Test user ke plan ko upgrade karein aur credits check karein.
                             </p>
                         </div>
 
-                        <div class="cosmic-card p-3 mb-3" style="background:rgba(20, 14, 45, 0.8);">
+                        <div class="cosmic-card p-3 mb-3" style="background:rgba(20, 14, 45, 0.9);">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span style="font-size:0.75rem; color:var(--text-muted);">Current Active Plan:</span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">Active Plan:</span>
                                 <span class="badge bg-warning text-dark fs-6">@(Model.TestUserProfile?.Plan ?? "Free")</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -378,7 +408,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label" style="font-size:0.72rem; color:var(--text-muted);">SIMULATE PLAN UPGRADE</label>
+                            <label class="form-label" style="font-size:0.72rem; color:var(--text-muted);">1-CLICK UPGRADE TEST</label>
                             <div class="d-grid gap-2">
                                 <form method="post" asp-page-handler="Upgrade">
                                     @Html.AntiForgeryToken()
@@ -412,6 +442,109 @@
                         </form>
                     </div>
                 }
+
+                <!-- TAB 5: AUTH & USER LOGIN (NEW!) -->
+                @if (Model.ActiveTab == "auth")
+                {
+                    <div>
+                        <div class="text-center mb-3">
+                            <h6 style="color:var(--accent-gold); font-size:0.95rem; margin-bottom:4px;">
+                                👤 यूजर लॉगिन व खाता (User Authentication)
+                            </h6>
+                            <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
+                                App me naye ya purane user account se login karein.
+                            </p>
+                        </div>
+
+                        <!-- Current Logged In Profile Box -->
+                        @if (Model.TestUserProfile != null)
+                        {
+                            <div class="cosmic-card p-3 mb-3 border-success" style="background:rgba(20, 14, 45, 0.9);">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-success" style="font-size:0.65rem;">Active Logged-In User</span>
+                                    <form method="post" asp-page-handler="Logout" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" style="font-size:0.7rem;">
+                                            <i class="bi bi-box-arrow-right"></i> Log Out
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="fw-bold text-light" style="font-size:0.88rem;">@Model.TestUserProfile.FullName</div>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">Email: @(Model.TestUserProfile.Email ?? "None")</div>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">Phone: @(Model.TestUserProfile.PhoneNumber ?? "None")</div>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">DOB: @Model.TestUserProfile.DateOfBirth</div>
+
+                                @if (!string.IsNullOrEmpty(Model.GeneratedJwtToken))
+                                {
+                                    <div class="mt-2 p-2 rounded bg-black border border-secondary">
+                                        <div style="font-size:0.62rem; color:var(--accent-gold);">JWT Bearer Token:</div>
+                                        <div style="font-size:0.62rem; word-break:break-all; font-family:monospace; color:#aaa;">
+                                            @(Model.GeneratedJwtToken.Length > 60 ? Model.GeneratedJwtToken[..60] + "..." : Model.GeneratedJwtToken)
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <!-- Login Form -->
+                        <div class="cosmic-card p-3 mb-3" style="background:rgba(20, 14, 45, 0.8);">
+                            <div class="fw-bold text-gold mb-2" style="font-size:0.8rem;">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Login With Existing Account
+                            </div>
+                            <form method="post" asp-page-handler="Login">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-2">
+                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">EMAIL OR PHONE</label>
+                                    <input type="text" name="emailOrPhone" value="tester@cyhastro.com" class="form-control cosmic-input form-control-sm" required />
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">PASSWORD</label>
+                                    <input type="password" name="password" value="Test@123" class="form-control cosmic-input form-control-sm" required />
+                                </div>
+                                <button type="submit" class="btn btn-gold w-100 btn-sm">
+                                    <i class="bi bi-door-open me-1"></i> Log In to App
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Register New User Form -->
+                        <div class="cosmic-card p-3 mb-2" style="background:rgba(20, 14, 45, 0.8);">
+                            <div class="fw-bold text-teal mb-2" style="font-size:0.8rem;">
+                                <i class="bi bi-person-plus me-1"></i>Register New Test User
+                            </div>
+                            <form method="post" asp-page-handler="Register">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-2">
+                                    <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">FULL NAME</label>
+                                    <input type="text" name="fullName" placeholder="Rahul Verma" class="form-control cosmic-input form-control-sm" required />
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">EMAIL</label>
+                                        <input type="email" name="email" placeholder="rahul@example.com" class="form-control cosmic-input form-control-sm" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">PHONE</label>
+                                        <input type="tel" name="phone" placeholder="+919811223344" class="form-control cosmic-input form-control-sm" />
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">PASSWORD</label>
+                                        <input type="password" name="password" value="Pass@123" class="form-control cosmic-input form-control-sm" required />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label" style="font-size:0.68rem; color:var(--text-muted);">DOB</label>
+                                        <input type="date" name="dob" value="1998-05-20" class="form-control cosmic-input form-control-sm" />
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-outline-info w-100 btn-sm">
+                                    <i class="bi bi-person-check me-1"></i> Create Account & Get 3 Free Scans
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- Phone Bottom Navigation Bar -->
@@ -432,6 +565,10 @@
                     <i class="bi bi-wallet2"></i>
                     <span>Wallet</span>
                 </a>
+                <a href="/Admin/AppSimulator?tab=auth" class="nav-tab-btn @(Model.ActiveTab == "auth" ? "active" : "")">
+                    <i class="bi bi-person-circle"></i>
+                    <span>User</span>
+                </a>
             </div>
         </div>
     </div>
@@ -440,86 +577,56 @@
     <div class="col-lg-7 col-xl-8">
         <div class="cosmic-card mb-4">
             <div class="cosmic-card-header">
-                <i class="bi bi-info-circle me-2"></i>CyhAstro App Ko Test Karne Ke 3 Tarike
+                <i class="bi bi-key me-2"></i>App Me Login Kaise Hota Hai? (Architecture Explained)
             </div>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="p-3 border border-secondary rounded h-100 bg-dark">
-                        <div class="text-gold fw-bold mb-1"><i class="bi bi-phone-fill me-1"></i> 1. Live Web Simulator</div>
-                        <p class="text-muted" style="font-size:0.75rem;">
-                            Bina kisi mobile device ke, isi screen par diye gaye smartphone me directly palm scan, face scan, aur Kundli test karein.
-                        </p>
-                        <span class="badge bg-success">Active On This Page</span>
+            <div class="p-3">
+                <p style="font-size:0.82rem; color:var(--text-primary);">
+                    CyhAstro me do alag-alag login systems hain:
+                </p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 border border-secondary rounded bg-dark h-100">
+                            <strong class="text-gold d-block mb-1">1. Web Admin Portal Login:</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">
+                                - <strong>URL:</strong> <a href="/Admin/Login" class="text-gold">/Admin/Login</a><br>
+                                - <strong>Auth Type:</strong> ASP.NET Core Cookie Auth (Role: <code>Admin</code>)<br>
+                                - <strong>Credentials:</strong> <code>admin@cyhastro.com</code> / <code>Admin@123</code><br>
+                                - <strong>Use:</strong> Users manage karna, Ledger audit, prices, settings badalna.
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 border border-secondary rounded h-100 bg-dark">
-                        <div class="text-teal fw-bold mb-1"><i class="bi bi-code-slash me-1"></i> 2. Swagger REST API</div>
-                        <p class="text-muted" style="font-size:0.75rem;">
-                            Swagger UI me sabhi endpoints ko directly test karein (JWT login, register, scan upload, upgrade).
-                        </p>
-                        <a href="http://localhost:5176/swagger" target="_blank" class="btn btn-outline-info btn-sm">
-                            Open Swagger <i class="bi bi-box-arrow-up-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 border border-secondary rounded h-100 bg-dark">
-                        <div class="text-green fw-bold mb-1"><i class="bi bi-wifi me-1"></i> 3. Real Mobile Phone</div>
-                        <p class="text-muted" style="font-size:0.75rem;">
-                            Apne phone ko same Wi-Fi se connect karke browser me local IP kholein ya camera se real scan karein.
-                        </p>
-                        <span class="badge bg-primary">Wi-Fi / Local Network</span>
+                    <div class="col-md-6">
+                        <div class="p-3 border border-secondary rounded bg-dark h-100">
+                            <strong class="text-teal d-block mb-1">2. Mobile App (User) Login:</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">
+                                - <strong>Endpoint:</strong> <code>POST /api/auth/login</code> & <code>POST /api/auth/register</code><br>
+                                - <strong>Auth Type:</strong> JWT Bearer Token (Role: <code>User</code>)<br>
+                                - <strong>Default Test:</strong> <code>tester@cyhastro.com</code> / <code>Test@123</code><br>
+                                - <strong>Use:</strong> Mobile user scan karta hai, apni kundli dekhta hai, credits use karta hai.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Testing Step-by-Step Checklist -->
-        <div class="cosmic-card mb-4">
-            <div class="cosmic-card-header">
-                <i class="bi bi-check2-square me-2"></i>Step-by-Step Test Checklist
+        <!-- Strict AI Image Upload Notice -->
+        <div class="cosmic-card mb-4 border-warning">
+            <div class="cosmic-card-header text-warning">
+                <i class="bi bi-shield-check me-2"></i>AI Response & Image Upload Rules
             </div>
-            <div class="list-group list-group-flush bg-transparent">
-                <div class="list-group-item bg-transparent text-primary border-secondary d-flex gap-3 align-items-start">
-                    <span class="badge bg-gold text-dark fs-6 mt-1">1</span>
-                    <div>
-                        <strong class="d-block text-gold">Test 1: Hastrekha (Palmistry) Scan</strong>
-                        <small class="text-muted">
-                            Phone simulator me <strong>Palm</strong> tab select karein. Koi bhi palm photo select karein ya bina select kiye <strong>"Scan & Analyze Palm"</strong> button dabayein. AI Jeevan, Mastishk aur Hriday rekha ka analysis generate karega aur DB me 1 credit deduct hoga.
-                        </small>
-                    </div>
-                </div>
-
-                <div class="list-group-item bg-transparent text-primary border-secondary d-flex gap-3 align-items-start">
-                    <span class="badge bg-gold text-dark fs-6 mt-1">2</span>
-                    <div>
-                        <strong class="d-block text-gold">Test 2: Vedic Kundli Calculation</strong>
-                        <small class="text-muted">
-                            Phone simulator me <strong>Kundli</strong> tab select karein. Date of Birth, Time aur City enter karein aur <strong>"Calculate Vedic Kundli"</strong> dabayein. Pure C# astronomical math engine bina kisi paid external API ke Lagna, Nakshatra, Mahadasha, Manglik aur Sade Sati nikal kar dega.
-                        </small>
-                    </div>
-                </div>
-
-                <div class="list-group-item bg-transparent text-primary border-secondary d-flex gap-3 align-items-start">
-                    <span class="badge bg-gold text-dark fs-6 mt-1">3</span>
-                    <div>
-                        <strong class="d-block text-gold">Test 3: Monetization & Ledger Audit</strong>
-                        <small class="text-muted">
-                            <strong>Wallet</strong> tab me <strong>Upgrade to Monthly</strong> par click karein. User ka plan upgrade hoga aur <a href="/Admin/Ledger" class="text-gold">Ledger (खाता)</a> me real-time ₹299 ki entry audit log me save ho jayegi.
-                        </small>
-                    </div>
-                </div>
-
-                <div class="list-group-item bg-transparent text-primary border-secondary d-flex gap-3 align-items-start">
-                    <span class="badge bg-gold text-dark fs-6 mt-1">4</span>
-                    <div>
-                        <strong class="d-block text-gold">Test 4: Language Switcher Verification</strong>
-                        <small class="text-muted">
-                            <a href="/Admin/Settings" class="text-gold">Admin Settings</a> me bhasha ko <strong>Hindi</strong> ya <strong>English</strong> select karein. Phir is simulator ko refresh karein — saare alerts aur AI analysis automatically usi bhasha me translate ho jayenge!
-                        </small>
-                    </div>
-                </div>
+            <div class="p-3">
+                <ul style="font-size:0.8rem; color:var(--text-primary); margin:0; padding-left:18px;">
+                    <li class="mb-2">
+                        <strong>Bina Photo Ke Scan Block Hai:</strong> Pehle simulator me convenience ke liye dummy test result fall back ho jata tha. Ab use hata diya gaya hai — <strong>Bina real photo upload kiye AI analyze nahi karega</strong>.
+                    </li>
+                    <li class="mb-2">
+                        <strong>Asli Photo Kaise Analyze Hoti Hai:</strong> Jab aap JPG/PNG/WEBP photo select karke <strong>"Upload & Analyze"</strong> dabate hain, photo server par save hoti hai aur Google Gemini Flash Vision API ko stream ki jati hai. AI aapke haath ki lakiron ke pixels dekh kar report generate karta hai.
+                    </li>
+                    <li>
+                        <strong>Uploaded Photo Preview:</strong> Result aane par simulator card me aapki uploaded photo ka preview bhi dikhega taki aap verify kar sakein.
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
