@@ -8,6 +8,8 @@ obj/
 ## Ignore sensitive files — NEVER commit these!
 appsettings.Production.json
 **/appsettings.Production.json
+appsettings.Local.json
+**/appsettings.Local.json
 *.pfx
 *.p12
 

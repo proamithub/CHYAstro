@@ -709,13 +709,13 @@ END
 GO
 
 -- Seed Admin user if not exists
--- BCrypt hash of 'Admin@123': $2a$11$w1hL7uNn2hK.xZJ3h6tGke6B8y1V8Lp/G9C7R5k6m7E8H9K0L1M2N
+-- Verified BCrypt hash of 'Admin@123'
 IF NOT EXISTS (SELECT 1 FROM tbl_Users WHERE Role = 'Admin')
 BEGIN
     DECLARE @AdminId UNIQUEIDENTIFIER = NEWID();
     INSERT INTO tbl_Users (UserId, FullName, Email, PasswordHash, Gender, DateOfBirth, Role)
     VALUES (@AdminId, 'Super Admin', 'admin@cyhastro.com',
-            '$2a$11$eAK4hLp2xGg3h6tGke6B8y1V8Lp7G9C7R5k6m7E8H9K0L1M2N3P4Q',
+            '$2a$11$qv98cEf7E3TmHEKWwSV0qu0qZqrz9Dq9i58Qpc1/Fkwv7y5CJp2p.',
             'Other', '1990-01-01', 'Admin');
 
     INSERT INTO tbl_Subscriptions (UserId, [Plan], PalmScansRemaining, FaceScansRemaining)
