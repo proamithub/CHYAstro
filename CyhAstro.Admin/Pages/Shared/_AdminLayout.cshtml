@@ -369,6 +369,9 @@
             <a href="/Admin" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
                 <i class="bi bi-grid-1x2"></i> Dashboard
             </a>
+            <a href="/Admin/AppSimulator" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "AppSimulator" ? "active" : "")" style="color:var(--accent-gold); font-weight:600;">
+                <i class="bi bi-phone-vibrate"></i> 📱 Live App Tester
+            </a>
 
             <div class="nav-section-label">Users</div>
             <a href="/Admin/Users" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Users" ? "active" : "")">

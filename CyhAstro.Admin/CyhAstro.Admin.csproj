@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CyhAstro.Core\CyhAstro.Core.csproj" />
     <ProjectReference Include="..\CyhAstro.Infrastructure\CyhAstro.Infrastructure.csproj" />
+    <ProjectReference Include="..\CyhAstro.Client\CyhAstro.Client.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
