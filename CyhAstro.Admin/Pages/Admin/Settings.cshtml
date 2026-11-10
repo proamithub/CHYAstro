@@ -12,6 +12,47 @@
 }
 
 <div class="row g-3">
+    <!-- System Language Configuration -->
+    <div class="col-12">
+        <div class="cosmic-card" style="border: 1px solid var(--accent-gold);">
+            <div class="cosmic-card-header text-gold">
+                <i class="bi bi-translate me-2"></i>System Language / सिस्टम भाषा चयन (Hindi, English, Hinglish)
+            </div>
+            <form method="post" asp-page-handler="SaveLanguage">
+                @Html.AntiForgeryToken()
+                <div class="row align-items-center">
+                    <div class="col-md-7 mb-3 mb-md-0">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
+                            Active Language Mode (API Responses, System Messages & AI Interpretation)
+                        </label>
+                        @{
+                            var currentLang = Model.Settings.GetValueOrDefault("DefaultLanguage", "Hinglish");
+                        }
+                        <select name="DefaultLanguage" class="form-select cosmic-input fs-6">
+                            <!option value="Hinglish" @(currentLang == "Hinglish" ? "selected" : "")>
+                                🇮🇳 हिंग्लिश / Hinglish (e.g. "Swagat hai CyhAstro mein", "Password galat hai")
+                            </!option>
+                            <!option value="Hindi" @(currentLang == "Hindi" ? "selected" : "")>
+                                🕉️ हिन्दी / Hindi (e.g. "CyhAstro में आपका स्वागत है", "पासवर्ड गलत है")
+                            </!option>
+                            <!option value="English" @(currentLang == "English" ? "selected" : "")>
+                                🌐 English / अंग्रेजी (e.g. "Welcome to CyhAstro", "Invalid password")
+                            </!option>
+                        </select>
+                        <small class="text-muted d-block mt-1">
+                            Ye bhasha set karne se API ke sabhi response messages aur Gemini AI interpretation isi bhasha mein dynamically serve honge.
+                        </small>
+                    </div>
+                    <div class="col-md-5 text-md-end">
+                        <button type="submit" class="btn btn-gold px-4 py-2">
+                            <i class="bi bi-check-circle me-2"></i>Apply Language Setting
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Plan Prices -->
     <div class="col-lg-6">
         <div class="cosmic-card">

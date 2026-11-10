@@ -1,4 +1,5 @@
 using CyhAstro.Core.DTOs;
+using CyhAstro.Core.Interfaces;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -18,19 +19,29 @@ public class GeminiVisionService : IGeminiVisionService
     private readonly string _apiKey;
     private readonly string _palmPrompt;
     private readonly string _facePrompt;
+    private readonly ILocalizationService _localizer;
 
-    public GeminiVisionService(HttpClient httpClient, string apiKey, string palmPrompt, string facePrompt)
+    public GeminiVisionService(HttpClient httpClient, string apiKey, string palmPrompt, string facePrompt, ILocalizationService localizer)
     {
         _httpClient = httpClient;
         _apiKey = apiKey;
         _palmPrompt = palmPrompt;
         _facePrompt = facePrompt;
+        _localizer = localizer;
     }
+
+    private string GetLanguageInstruction() => _localizer.CurrentLanguage switch
+    {
+        "Hindi" => "\nIMPORTANT: Provide all summaries, strength notes, and insights in pure, respectful Hindi (Devanagari script).",
+        "English" => "\nIMPORTANT: Provide all summaries, strength notes, and insights in clear, modern English.",
+        _ => "\nIMPORTANT: Provide all summaries, strength notes, and insights in natural, friendly Hinglish (Hindi written in Latin alphabet, e.g. 'Aapki jeevan rekha lambi aur spasht hai')."
+    };
 
     public async Task<PalmAnalysisDto?> AnalyzePalmAsync(Stream imageStream, string mimeType, bool isPremiumUser)
     {
         var base64 = await StreamToBase64Async(imageStream);
-        var json = await CallGeminiAsync(_palmPrompt, base64, mimeType);
+        var effectivePrompt = _palmPrompt + GetLanguageInstruction();
+        var json = await CallGeminiAsync(effectivePrompt, base64, mimeType);
         if (json == null) return null;
 
         var result = ParsePalmJson(json);
@@ -39,15 +50,15 @@ public class GeminiVisionService : IGeminiVisionService
         if (!isPremiumUser)
         {
             result.FateLine.IsLocked = true;
-            result.FateLine.Summary = "Subscribe to unlock your Fate Line (Bhagya Rekha) analysis.";
+            result.FateLine.Summary = _localizer.Get("FateLineLocked");
             result.FateLine.Insights = new() { "🔒 Unlock with Premium", "🔒 Career & Destiny Insights" };
 
             result.MountJupiter.IsLocked = true;
-            result.MountJupiter.Summary = "🔒 Premium Feature - Subscribe to unlock";
+            result.MountJupiter.Summary = _localizer.Get("MountLocked");
             result.MountVenus.IsLocked = true;
-            result.MountVenus.Summary = "🔒 Premium Feature - Subscribe to unlock";
+            result.MountVenus.Summary = _localizer.Get("MountLocked");
             result.MountSun.IsLocked = true;
-            result.MountSun.Summary = "🔒 Premium Feature - Subscribe to unlock";
+            result.MountSun.Summary = _localizer.Get("MountLocked");
         }
 
         return result;
@@ -60,17 +71,18 @@ public class GeminiVisionService : IGeminiVisionService
             // Face scan is premium only
             return new FaceAnalysisDto
             {
-                Forehead = new() { IsLocked = true, Summary = "🔒 Subscribe to unlock Face Reading (Samudrik Shastra)" },
-                Eyebrows = new() { IsLocked = true, Summary = "🔒 Premium Feature" },
-                Eyes = new() { IsLocked = true, Summary = "🔒 Premium Feature" },
-                Nose = new() { IsLocked = true, Summary = "🔒 Premium Feature" },
-                LipsAndMouth = new() { IsLocked = true, Summary = "🔒 Premium Feature" },
-                JawAndChin = new() { IsLocked = true, Summary = "🔒 Premium Feature" }
+                Forehead = new() { IsLocked = true, Summary = _localizer.Get("FaceReadingLocked") },
+                Eyebrows = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
+                Eyes = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
+                Nose = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
+                LipsAndMouth = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") },
+                JawAndChin = new() { IsLocked = true, Summary = _localizer.Get("MountLocked") }
             };
         }
 
         var base64 = await StreamToBase64Async(imageStream);
-        var json = await CallGeminiAsync(_facePrompt, base64, mimeType);
+        var effectivePrompt = _facePrompt + GetLanguageInstruction();
+        var json = await CallGeminiAsync(effectivePrompt, base64, mimeType);
         if (json == null) return null;
 
         return ParseFaceJson(json);

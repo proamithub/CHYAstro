@@ -24,6 +24,7 @@ public class ScanController : ControllerBase
     private readonly IWebHostEnvironment  _env;
     private readonly IConfiguration       _config;
     private readonly ILogger<ScanController> _logger;
+    private readonly ILocalizationService _localizer;
 
     public ScanController(
         IScanRepository scanRepo,
@@ -31,14 +32,16 @@ public class ScanController : ControllerBase
         IGeminiVisionService gemini,
         IWebHostEnvironment env,
         IConfiguration config,
-        ILogger<ScanController> logger)
+        ILogger<ScanController> logger,
+        ILocalizationService localizer)
     {
-        _scanRepo = scanRepo;
-        _userRepo = userRepo;
-        _gemini   = gemini;
-        _env      = env;
-        _config   = config;
-        _logger   = logger;
+        _scanRepo  = scanRepo;
+        _userRepo  = userRepo;
+        _gemini    = gemini;
+        _env       = env;
+        _config    = config;
+        _logger    = logger;
+        _localizer = localizer;
     }
 
     // ─────────────────────────────────────────────
@@ -61,10 +64,10 @@ public class ScanController : ControllerBase
 
         // Image validation
         if (image == null || image.Length == 0)
-            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = "Image file zaroori hai." });
+            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = _localizer.Get("ImageRequired") });
 
         if (!IsValidImage(image.ContentType))
-            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = "Sirf JPG, PNG ya WEBP images accept hoti hain." });
+            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = _localizer.Get("InvalidImageFormat") });
 
         // User profile + plan check
         var profile = await _userRepo.GetProfileAsync(userId);
@@ -103,10 +106,10 @@ public class ScanController : ControllerBase
                  {
                      Success      = false,
                      ScanType     = "Palm",
-                     ErrorMessage = "Palm scan credits khatam ho gaye hain. Premium plan lein unlimited scans ke liye!",
+                     ErrorMessage = _localizer.Get("PalmCreditsExhausted"),
                      CreditsLeft  = 0
                  }),
-            -1 => StatusCode(500, new ScanResultDto { Success = false, ErrorMessage = "Server error. Dobara try karein." }),
+            -1 => StatusCode(500, new ScanResultDto { Success = false, ErrorMessage = _localizer.Get("ServerError") }),
             _  => Ok(new ScanResultDto
                  {
                      ScanId       = scanId,
@@ -135,10 +138,10 @@ public class ScanController : ControllerBase
         if (userId == Guid.Empty) return Unauthorized();
 
         if (image == null || image.Length == 0)
-            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = "Image file zaroori hai." });
+            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = _localizer.Get("ImageRequired") });
 
         if (!IsValidImage(image.ContentType))
-            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = "Sirf JPG, PNG ya WEBP images accept hoti hain." });
+            return BadRequest(new ScanResultDto { Success = false, ErrorMessage = _localizer.Get("InvalidImageFormat") });
 
         var profile = await _userRepo.GetProfileAsync(userId);
         if (profile == null) return Unauthorized();
@@ -173,10 +176,10 @@ public class ScanController : ControllerBase
                  {
                      Success      = false,
                      ScanType     = "Face",
-                     ErrorMessage = "Face scan credits nahi hain. Premium plan activate karein.",
+                     ErrorMessage = _localizer.Get("FaceCreditsExhausted"),
                      CreditsLeft  = 0
                  }),
-            -1 => StatusCode(500, new ScanResultDto { Success = false, ErrorMessage = "Server error." }),
+            -1 => StatusCode(500, new ScanResultDto { Success = false, ErrorMessage = _localizer.Get("ServerError") }),
             _  => Ok(new ScanResultDto
                  {
                      ScanId       = scanId,

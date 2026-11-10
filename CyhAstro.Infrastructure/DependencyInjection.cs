@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IAppVersionRepository,   AppVersionRepository>();
 
         // ── 3. AI & Domain Services ───────────────────────────────────
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IVedicAstroService,   VedicAstroService>();
 
         // Gemini Vision — HttpClient factory se banayenge
@@ -71,7 +72,8 @@ public static class DependencyInjection
                 Respond ONLY in valid JSON with keys: forehead, eyebrows, eyes, nose, lipsAndMouth, jawAndChin.
                 """;
 
-            return new GeminiVisionService(http, apiKey, palmPrompt, facePrompt);
+            var localizer = sp.GetRequiredService<ILocalizationService>();
+            return new GeminiVisionService(http, apiKey, palmPrompt, facePrompt, localizer);
         });
 
         return services;

@@ -17,9 +17,13 @@ namespace CyhAstro.Api.Controllers;
 public class SubscriptionController : ControllerBase
 {
     private readonly ISubscriptionRepository _subRepo;
+    private readonly ILocalizationService _localizer;
 
-    public SubscriptionController(ISubscriptionRepository subRepo)
-        => _subRepo = subRepo;
+    public SubscriptionController(ISubscriptionRepository subRepo, ILocalizationService localizer)
+    {
+        _subRepo   = subRepo;
+        _localizer = localizer;
+    }
 
     // ─────────────────────────────────────────────
     // GET /api/subscription/status
@@ -107,12 +111,12 @@ public class SubscriptionController : ControllerBase
             0  => Ok(new
                  {
                      success  = true,
-                     message  = $"{req.NewPlan} plan successfully activate ho gaya!",
+                     message  = _localizer.Get("PlanActivated", req.NewPlan),
                      expiryDate = expiry,
                      plan     = req.NewPlan
                  }),
-            -1 => StatusCode(500, new { success = false, message = "Plan upgrade mein error aaya. Payment team se contact karein." }),
-            _  => BadRequest(new { success = false, message = "Invalid request." })
+            -1 => StatusCode(500, new { success = false, message = _localizer.Get("PlanUpgradeError") }),
+            _  => BadRequest(new { success = false, message = _localizer.Get("InvalidRequest") })
         };
     }
 

@@ -249,6 +249,7 @@ BEGIN
      'You are an expert in Samudrik Shastra (Indian Physiognomy / Face Reading). Analyze this frontal face image. Examine: 1) Forehead (Mastak) - width, height, lines - indicates intellect and destiny 2) Eyebrows - shape, thickness, gap - indicates personality and decisions 3) Eyes - size, shape, brightness - indicates soul and emotions 4) Nose - shape, tip, nostrils - indicates wealth and willpower 5) Lips & Mouth - fullness, shape - indicates communication and desires 6) Jawline & Chin - structure - indicates determination. Provide analysis for each zone. Respond ONLY in valid JSON with keys: forehead, eyebrows, eyes, nose, lipsAndMouth, jawAndChin. Each key: summary, trait (positive personality trait), insight (1 key life insight).',
      'Gemini AI prompt for face reading'),
     ('AppName',              'CyhAstro',  'Application display name'),
+    ('DefaultLanguage',      'Hinglish',  'Active system language: Hindi, English, Hinglish'),
     ('SupportEmail',         'support@cyhastro.com', 'Support email address');
 END
 GO

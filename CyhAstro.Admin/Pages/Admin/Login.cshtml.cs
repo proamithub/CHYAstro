@@ -11,8 +11,13 @@ namespace CyhAstro.Admin.Pages.Admin;
 public class LoginModel : PageModel
 {
     private readonly ISqlConnectionFactory _db;
+    private readonly CyhAstro.Core.Interfaces.ILocalizationService _localizer;
 
-    public LoginModel(ISqlConnectionFactory db) => _db = db;
+    public LoginModel(ISqlConnectionFactory db, CyhAstro.Core.Interfaces.ILocalizationService localizer)
+    {
+        _db = db;
+        _localizer = localizer;
+    }
 
     public string? ErrorMessage { get; set; }
 
@@ -20,7 +25,7 @@ public class LoginModel : PageModel
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            ErrorMessage = "Email aur Password dono zaroori hain.";
+            ErrorMessage = _localizer.Get("AdminEmailPasswordRequired");
             return Page();
         }
 
@@ -35,7 +40,7 @@ public class LoginModel : PageModel
 
         if (admin == null)
         {
-            ErrorMessage = "Admin account nahi mila ya access nahi hai.";
+            ErrorMessage = _localizer.Get("AdminAccountNotFound");
             return Page();
         }
 
@@ -60,7 +65,7 @@ public class LoginModel : PageModel
 
         if (!isValid)
         {
-            ErrorMessage = "Password galat hai.";
+            ErrorMessage = _localizer.Get("InvalidPassword");
             return Page();
         }
 

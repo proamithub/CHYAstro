@@ -12,9 +12,13 @@ namespace CyhAstro.Api.Controllers;
 public class AppController : ControllerBase
 {
     private readonly IAppVersionRepository _versionRepo;
+    private readonly ILocalizationService _localizer;
 
-    public AppController(IAppVersionRepository versionRepo)
-        => _versionRepo = versionRepo;
+    public AppController(IAppVersionRepository versionRepo, ILocalizationService localizer)
+    {
+        _versionRepo = versionRepo;
+        _localizer   = localizer;
+    }
 
     // ─────────────────────────────────────────────
     // GET /api/app/check-update?platform=Android&currentVersion=1
@@ -47,7 +51,8 @@ public class AppController : ControllerBase
             status    = "healthy",
             app       = "CyhAstro API",
             version   = "1.0.0",
+            language  = _localizer.CurrentLanguage,
             timestamp = DateTime.UtcNow,
-            message   = "✦ Cosmic Intelligence Online ✦"
+            message   = _localizer.Get("CosmicOnline")
         });
 }

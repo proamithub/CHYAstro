@@ -20,11 +20,13 @@ public class AuthController : ControllerBase
 {
     private readonly IUserRepository _userRepo;
     private readonly IConfiguration _config;
+    private readonly ILocalizationService _localizer;
 
-    public AuthController(IUserRepository userRepo, IConfiguration config)
+    public AuthController(IUserRepository userRepo, IConfiguration config, ILocalizationService localizer)
     {
-        _userRepo = userRepo;
-        _config   = config;
+        _userRepo  = userRepo;
+        _config    = config;
+        _localizer = localizer;
     }
 
     // ─────────────────────────────────────────────
@@ -35,22 +37,22 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Email) && string.IsNullOrWhiteSpace(req.PhoneNumber))
-            return BadRequest(new AuthResponse(false, "Email ya Phone number zaroori hai.", null, null, null, null));
+            return BadRequest(new AuthResponse(false, _localizer.Get("MissingEmailOrPhone"), null, null, null, null));
 
         if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6)
-            return BadRequest(new AuthResponse(false, "Password kam se kam 6 characters ka hona chahiye.", null, null, null, null));
+            return BadRequest(new AuthResponse(false, _localizer.Get("PasswordMinLength"), null, null, null, null));
 
         var (code, userId) = await _userRepo.RegisterOrLoginAsync(req);
 
         if (code == -1)
-            return StatusCode(500, new AuthResponse(false, "Server error. Dobara try karein.", null, null, null, null));
+            return StatusCode(500, new AuthResponse(false, _localizer.Get("ServerError"), null, null, null, null));
 
         var profile = await _userRepo.GetProfileAsync(userId!.Value);
         var token   = GenerateJwtToken(userId.Value, profile!.FullName, "User");
 
         return Ok(new AuthResponse(
             Success: true,
-            Message: code == 0 ? "Registration successful! Swagat hai CyhAstro mein." : "Login successful!",
+            Message: code == 0 ? _localizer.Get("RegistrationSuccess") : _localizer.Get("LoginSuccess", profile.FullName),
             Token:   token,
             UserId:  userId,
             Role:    "User",
@@ -65,20 +67,20 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Email) && string.IsNullOrWhiteSpace(req.PhoneNumber))
-            return BadRequest(new AuthResponse(false, "Email ya Phone zaroori hai.", null, null, null, null));
+            return BadRequest(new AuthResponse(false, _localizer.Get("MissingEmailOrPhoneLogin"), null, null, null, null));
 
         // UserRepository mein cast karna padega extended method ke liye
         var userRepo = (UserRepository)_userRepo;
         var (hash, userId, role, isBlocked) = await userRepo.GetLoginDataAsync(req.Email, req.PhoneNumber);
 
         if (hash == null || userId == null)
-            return Unauthorized(new AuthResponse(false, "User nahi mila. Pehle register karein.", null, null, null, null));
+            return Unauthorized(new AuthResponse(false, _localizer.Get("UserNotFound"), null, null, null, null));
 
         if (isBlocked)
-            return Unauthorized(new AuthResponse(false, "Aapka account block kar diya gaya hai. Support se contact karein.", null, null, null, null));
+            return Unauthorized(new AuthResponse(false, _localizer.Get("AccountBlocked"), null, null, null, null));
 
         if (!BCrypt.Net.BCrypt.Verify(req.Password, hash))
-            return Unauthorized(new AuthResponse(false, "Password galat hai.", null, null, null, null));
+            return Unauthorized(new AuthResponse(false, _localizer.Get("InvalidPassword"), null, null, null, null));
 
         // Device token update karo (push notifications ke liye)
         if (!string.IsNullOrWhiteSpace(req.DeviceToken))
@@ -89,7 +91,7 @@ public class AuthController : ControllerBase
 
         return Ok(new AuthResponse(
             Success: true,
-            Message: "Login successful! Namaste " + profile.FullName,
+            Message: _localizer.Get("LoginSuccess", profile.FullName),
             Token:   token,
             UserId:  userId,
             Role:    role,

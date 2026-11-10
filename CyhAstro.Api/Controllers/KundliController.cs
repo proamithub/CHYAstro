@@ -21,11 +21,13 @@ public class KundliController : ControllerBase
 {
     private readonly IVedicAstroService _astroSvc;
     private readonly IKundliRepository  _kundliRepo;
+    private readonly ILocalizationService _localizer;
 
-    public KundliController(IVedicAstroService astroSvc, IKundliRepository kundliRepo)
+    public KundliController(IVedicAstroService astroSvc, IKundliRepository kundliRepo, ILocalizationService localizer)
     {
         _astroSvc   = astroSvc;
         _kundliRepo = kundliRepo;
+        _localizer  = localizer;
     }
 
     // ─────────────────────────────────────────────
@@ -82,7 +84,7 @@ public class KundliController : ControllerBase
         var userId = GetCurrentUserId();
         var kundli = await _kundliRepo.GetKundliAsync(userId);
         if (kundli == null)
-            return NotFound(new { message = "Kundli abhi calculate nahi ki. Pehle /api/kundli/calculate call karein." });
+            return NotFound(new { message = _localizer.Get("KundliNotCalculated") });
         return Ok(kundli);
     }
 
