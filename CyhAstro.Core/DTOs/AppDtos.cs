@@ -72,12 +72,24 @@ public record KundliRequest(
     string TimeZoneId
 );
 
+public class KundliHouseDto
+{
+    public int HouseNumber { get; set; } // 1 to 12
+    public int RashiNumber { get; set; } // 1 to 12
+    public string RashiName { get; set; } = string.Empty;
+    public List<string> PlanetsHindi { get; set; } = new();
+    public List<string> PlanetsEnglish { get; set; } = new();
+}
+
 public class KundliResultDto
 {
     public string LagnaRashi { get; set; } = string.Empty;
+    public int LagnaRashiNumber { get; set; }
     public double LagnaDegree { get; set; }
     public string MoonRashi { get; set; } = string.Empty;
+    public int MoonRashiNumber { get; set; }
     public string SunRashi { get; set; } = string.Empty;
+    public int SunRashiNumber { get; set; }
     public string Nakshatra { get; set; } = string.Empty;
     public int NakshatraPada { get; set; }
     public string MahadashaCurrent { get; set; } = string.Empty;
@@ -86,6 +98,14 @@ public class KundliResultDto
     public bool SadeSatiActive { get; set; }
     public List<PlanetDto> Planets { get; set; } = new();
     public string AyanamsaUsed { get; set; } = "Lahiri";
+
+    // 12 Houses for D1 Lagna Chart
+    public List<KundliHouseDto> D1Houses { get; set; } = new();
+
+    // D9 Navamsha Chart
+    public string NavamshaLagnaRashi { get; set; } = string.Empty;
+    public int NavamshaLagnaRashiNumber { get; set; }
+    public List<KundliHouseDto> D9Houses { get; set; } = new();
 }
 
 public class PlanetDto
@@ -93,10 +113,64 @@ public class PlanetDto
     public string Name { get; set; } = string.Empty;
     public string NameHindi { get; set; } = string.Empty;
     public string Rashi { get; set; } = string.Empty;
+    public int RashiNumber { get; set; }
     public double Degree { get; set; }
+    public int House { get; set; } // 1 to 12
     public bool IsRetrograde { get; set; }
     public bool IsExalted { get; set; }
     public bool IsDebilitated { get; set; }
+    public string NavamshaRashi { get; set; } = string.Empty;
+    public int NavamshaRashiNumber { get; set; }
+    public int NavamshaHouse { get; set; }
+}
+
+// ===== 36 GUNA MILAN (ASHTAKOOT) =====
+public record GunMilanRequest(
+    string BoyName,
+    DateOnly BoyDob,
+    TimeOnly? BoyTob,
+    string? BoyCity,
+    double BoyLat,
+    double BoyLng,
+    string GirlName,
+    DateOnly GirlDob,
+    TimeOnly? GirlTob,
+    string? GirlCity,
+    double GirlLat,
+    double GirlLng
+);
+
+public class GunMilanKootDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string NameHindi { get; set; } = string.Empty;
+    public double MaxScore { get; set; }
+    public double ObtainedScore { get; set; }
+    public string Description { get; set; } = string.Empty;
+}
+
+public class GunMilanResultDto
+{
+    public string BoyMoonRashi { get; set; } = string.Empty;
+    public string BoyNakshatra { get; set; } = string.Empty;
+    public string GirlMoonRashi { get; set; } = string.Empty;
+    public string GirlNakshatra { get; set; } = string.Empty;
+
+    public double TotalScore { get; set; } // Out of 36
+    public double MaxScore { get; set; } = 36;
+    public string Verdict { get; set; } = string.Empty;
+    public string VerdictColor { get; set; } = "success"; // "success", "warning", "danger"
+    public string Recommendation { get; set; } = string.Empty;
+
+    public bool BoyIsManglik { get; set; }
+    public bool GirlIsManglik { get; set; }
+    public bool ManglikMatchAcceptable { get; set; }
+    public string ManglikVerdict { get; set; } = string.Empty;
+
+    public bool HasNadiDosha { get; set; }
+    public bool HasBhakootDosha { get; set; }
+
+    public List<GunMilanKootDto> Koots { get; set; } = new();
 }
 
 // ===== SCAN =====

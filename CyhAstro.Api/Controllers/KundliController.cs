@@ -22,12 +22,18 @@ public class KundliController : ControllerBase
     private readonly IVedicAstroService _astroSvc;
     private readonly IKundliRepository  _kundliRepo;
     private readonly ILocalizationService _localizer;
+    private readonly IPdfReportService _pdfSvc;
 
-    public KundliController(IVedicAstroService astroSvc, IKundliRepository kundliRepo, ILocalizationService localizer)
+    public KundliController(
+        IVedicAstroService astroSvc,
+        IKundliRepository kundliRepo,
+        ILocalizationService localizer,
+        IPdfReportService pdfSvc)
     {
         _astroSvc   = astroSvc;
         _kundliRepo = kundliRepo;
         _localizer  = localizer;
+        _pdfSvc     = pdfSvc;
     }
 
     // ─────────────────────────────────────────────
@@ -72,6 +78,40 @@ public class KundliController : ControllerBase
         await _kundliRepo.SaveKundliAsync(profile);
 
         return Ok(result);
+    }
+
+    // ─────────────────────────────────────────────
+    // POST /api/kundli/match (36 Guna Ashtakoot Milan)
+    // ─────────────────────────────────────────────
+    /// <summary>36 Guna Ashtakoot Kundli Matching for Marriage.</summary>
+    [HttpPost("match")]
+    public ActionResult<GunMilanResultDto> MatchKundli([FromBody] GunMilanRequest req)
+    {
+        var result = _astroSvc.CalculateGunMilan(
+            req.BoyDob, req.BoyTob, req.BoyLat, req.BoyLng,
+            req.GirlDob, req.GirlTob, req.GirlLat, req.GirlLng);
+
+        return Ok(result);
+    }
+
+    // ─────────────────────────────────────────────
+    // GET /api/kundli/pdf
+    // ─────────────────────────────────────────────
+    /// <summary>Download Vedic Kundli Report in PDF format.</summary>
+    [HttpGet("pdf")]
+    public async Task<IActionResult> DownloadPdf(
+        [FromQuery] string? name, [FromQuery] string? dob, [FromQuery] string? tob,
+        [FromQuery] string? city, [FromQuery] double lat = 28.6139, [FromQuery] double lng = 77.2090)
+    {
+        var d = DateOnly.TryParse(dob, out var parsedDob) ? parsedDob : new DateOnly(1995, 8, 15);
+        var t = TimeOnly.TryParse(tob, out var parsedTob) ? parsedTob : (TimeOnly?)null;
+        var cityName = string.IsNullOrWhiteSpace(city) ? "New Delhi, India" : city;
+        var nativeName = string.IsNullOrWhiteSpace(name) ? "Devotee User" : name;
+
+        var result = _astroSvc.CalculateKundli(d, t, lat, lng, "India Standard Time");
+        var pdfBytes = _pdfSvc.GenerateKundliReportPdf(result, nativeName, cityName, d, t);
+
+        return File(pdfBytes, "application/pdf", $"Kundli_{nativeName.Replace(" ", "_")}.pdf");
     }
 
     // ─────────────────────────────────────────────

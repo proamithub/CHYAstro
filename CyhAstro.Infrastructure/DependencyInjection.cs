@@ -39,6 +39,7 @@ public static class DependencyInjection
         // ── 3. AI & Domain Services ───────────────────────────────────
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IVedicAstroService,   VedicAstroService>();
+        services.AddSingleton<IPdfReportService,    PdfReportService>();
 
         // Gemini Vision — HttpClient factory se banayenge
         services.AddHttpClient("GeminiClient", client =>

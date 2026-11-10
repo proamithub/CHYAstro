@@ -23,6 +23,7 @@ public class AppSimulatorModel : PageModel
     private readonly IGeminiVisionService _gemini;
     private readonly ISubscriptionRepository _subRepo;
     private readonly ILocalizationService _localizer;
+    private readonly IPdfReportService _pdfSvc;
     private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _config;
 
@@ -34,6 +35,7 @@ public class AppSimulatorModel : PageModel
         IGeminiVisionService gemini,
         ISubscriptionRepository subRepo,
         ILocalizationService localizer,
+        IPdfReportService pdfSvc,
         IWebHostEnvironment env,
         IConfiguration config)
     {
@@ -44,12 +46,15 @@ public class AppSimulatorModel : PageModel
         _gemini = gemini;
         _subRepo = subRepo;
         _localizer = localizer;
+        _pdfSvc = pdfSvc;
         _env = env;
         _config = config;
     }
 
     public UserProfileDto? TestUserProfile { get; set; }
     public KundliResultDto? KundliResult { get; set; }
+    public GunMilanResultDto? MilanResult { get; set; }
+    public string KundliViewMode { get; set; } = "d1";
     public PalmAnalysisDto? PalmResult { get; set; }
     public FaceAnalysisDto? FaceResult { get; set; }
     public string? UploadedImageUrl { get; set; }
@@ -428,6 +433,7 @@ public class AppSimulatorModel : PageModel
         string dob, string tob, string city, double lat = 28.6139, double lng = 77.2090)
     {
         ActiveTab = "kundli";
+        KundliViewMode = "d1";
         await LoadActiveUserAsync();
 
         if (string.IsNullOrWhiteSpace(dob)) dob = "1995-08-15";
@@ -446,6 +452,44 @@ public class AppSimulatorModel : PageModel
         };
 
         return Page();
+    }
+
+    // ── 7B. 36 GUNA ASHTAKOOT MILAN ────────────────
+    public async Task<IActionResult> OnPostCalculateGunMilanAsync(
+        string boyName, string boyDob, string boyTob,
+        string girlName, string girlDob, string girlTob)
+    {
+        ActiveTab = "kundli";
+        KundliViewMode = "match";
+        await LoadActiveUserAsync();
+
+        var bDob = DateOnly.TryParse(boyDob, out var bd) ? bd : new DateOnly(1995, 8, 15);
+        var bTob = TimeOnly.TryParse(boyTob, out var bt) ? bt : (TimeOnly?)new TimeOnly(14, 30);
+        var gDob = DateOnly.TryParse(girlDob, out var gd) ? gd : new DateOnly(1997, 11, 20);
+        var gTob = TimeOnly.TryParse(girlTob, out var gt) ? gt : (TimeOnly?)new TimeOnly(10, 15);
+
+        MilanResult = _astroSvc.CalculateGunMilan(
+            bDob, bTob, 28.6139, 77.2090,
+            gDob, gTob, 28.6139, 77.2090);
+
+        AlertSuccess = true;
+        AlertMessage = $"36 गुण मिलान पूर्ण! कुल अंक: {MilanResult.TotalScore}/36 — {MilanResult.Verdict}";
+        return Page();
+    }
+
+    // ── 7C. DOWNLOAD KUNDLI PDF ────────────────────
+    public IActionResult OnGetDownloadKundliPdf(
+        string? name, string? dob, string? tob, string? city)
+    {
+        var d = DateOnly.TryParse(dob, out var bd) ? bd : new DateOnly(1995, 8, 15);
+        var t = TimeOnly.TryParse(tob, out var bt) ? bt : (TimeOnly?)new TimeOnly(14, 30);
+        var cityName = string.IsNullOrWhiteSpace(city) ? "New Delhi, India" : city;
+        var nativeName = string.IsNullOrWhiteSpace(name) ? "Devotee User" : name;
+
+        var result = _astroSvc.CalculateKundli(d, t, 28.6139, 77.2090, "India Standard Time");
+        var pdfBytes = _pdfSvc.GenerateKundliReportPdf(result, nativeName, cityName, d, t);
+
+        return File(pdfBytes, "application/pdf", $"Kundli_{nativeName.Replace(" ", "_")}.pdf");
     }
 
     // ── 8. SUBSCRIPTION UPGRADE ────────────────────
