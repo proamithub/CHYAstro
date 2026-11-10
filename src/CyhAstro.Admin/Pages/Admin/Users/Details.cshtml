@@ -1,0 +1,308 @@
+@page "/Admin/Users/{id:guid}"
+@model CyhAstro.Admin.Pages.Admin.Users.DetailsModel
+@{
+    ViewData["Title"] = "User Details — " + (Model.Profile?.FullName ?? "User");
+    ViewData["ActivePage"] = "Users";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-cosmic mb-3 p-3">✅ @TempData["Success"]</div>
+}
+
+@if (Model.Profile == null)
+{
+    <div class="cosmic-card">
+        <div class="alert alert-danger mb-0">User nahi mila!</div>
+    </div>
+}
+else
+{
+    <!-- Top Action Bar & Quick Status -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <a href="/Admin/Users" class="btn btn-sm" style="background:rgba(42,31,74,0.8); color:var(--text-muted); border:1px solid var(--border-color);">
+                <i class="bi bi-arrow-left me-1"></i> Back to Users
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <div class="user-avatar" style="width:48px; height:48px; font-size:1.2rem;">
+                    @Model.Profile.FullName[0]
+                </div>
+                <div>
+                    <h4 class="mb-0" style="font-family:'Cinzel', serif; color:var(--accent-gold);">@Model.Profile.FullName</h4>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">User ID: @Model.Profile.UserId</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-gold btn-sm" onclick="openActionModal('AddPlan')">
+                <i class="bi bi-calendar-plus me-1"></i> Add Plan Days
+            </button>
+            <button class="btn btn-cosmic btn-sm" onclick="openActionModal('AddCredits')">
+                <i class="bi bi-plus-circle me-1"></i> Add Scan Credits
+            </button>
+            @if (Model.Profile.IsBlocked)
+            {
+                <form method="post" asp-page-handler="ToggleBlock" asp-route-id="@Model.Profile.UserId" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-unlock me-1"></i> Unblock User
+                    </button>
+                </form>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-outline-danger" onclick="openActionModal('Block')">
+                    <i class="bi bi-shield-slash me-1"></i> Block User
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- 3 Column Overview Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Basic Profile Card -->
+        <div class="col-lg-4">
+            <div class="cosmic-card h-100">
+                <div class="cosmic-card-header"><i class="bi bi-person-badge me-2"></i>Personal Details</div>
+                <ul class="list-unstyled mb-0" style="font-size:0.84rem; line-height:2;">
+                    <li><strong style="color:var(--text-muted);">Email:</strong> @(Model.Profile.Email ?? "—")</li>
+                    <li><strong style="color:var(--text-muted);">Phone:</strong> @(Model.Profile.PhoneNumber ?? "—")</li>
+                    <li><strong style="color:var(--text-muted);">Gender:</strong> @Model.Profile.Gender</li>
+                    <li><strong style="color:var(--text-muted);">DOB:</strong> @Model.Profile.DateOfBirth.ToString("dd MMM yyyy")</li>
+                    <li><strong style="color:var(--text-muted);">TOB:</strong> @(Model.Profile.TimeOfBirth?.ToString("hh\\:mm") ?? "Not provided")</li>
+                    <li><strong style="color:var(--text-muted);">Birth City:</strong> @(Model.Profile.BirthCity ?? "—")</li>
+                    <li><strong style="color:var(--text-muted);">Status:</strong> 
+                        <span class="plan-badge @(Model.Profile.IsBlocked ? "status-blocked" : "status-active")">
+                            @(Model.Profile.IsBlocked ? "Blocked" : "Active")
+                        </span>
+                    </li>
+                    <li><strong style="color:var(--text-muted);">Last Active:</strong> 
+                        @(Model.Profile.LastLoginAt.HasValue ? Model.Profile.LastLoginAt.Value.ToString("dd MMM yyyy, hh:mm tt") : "Never")
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 2. Subscription & Quota Card -->
+        <div class="col-lg-4">
+            <div class="cosmic-card h-100">
+                <div class="cosmic-card-header"><i class="bi bi-star me-2"></i>Subscription & Credits</div>
+                <div class="mb-3">
+                    <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Active Plan</div>
+                    <span class="plan-badge plan-@Model.Profile.Plan.ToLower()" style="font-size:0.85rem; padding:4px 14px;">
+                        @Model.Profile.Plan
+                    </span>
+                    @if (Model.Profile.IsSubscriptionActive && Model.Profile.ExpiryDate.HasValue)
+                    {
+                        <div class="mt-1" style="font-size:0.78rem; color:var(--accent-gold);">
+                            Valid till: @Model.Profile.ExpiryDate.Value.ToString("dd MMM yyyy")
+                        </div>
+                    }
+                </div>
+                <div class="row g-2 text-center pt-2 border-top" style="border-color:var(--border-color) !important;">
+                    <div class="col-6">
+                        <div style="background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.25); border-radius:8px; padding:10px;">
+                            <div style="font-size:1.4rem; font-weight:700; color:var(--accent-teal);">@Model.Profile.PalmScansRemaining</div>
+                            <div style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase;">Palm Scans Left</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background:rgba(159,92,247,0.08); border:1px solid rgba(159,92,247,0.25); border-radius:8px; padding:10px;">
+                            <div style="font-size:1.4rem; font-weight:700; color:var(--accent-violet);">@Model.Profile.FaceScansRemaining</div>
+                            <div style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase;">Face Scans Left</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Kundli Snapshot Card -->
+        <div class="col-lg-4">
+            <div class="cosmic-card h-100">
+                <div class="cosmic-card-header"><i class="bi bi-compass me-2"></i>Vedic Kundli Profile</div>
+                @if (string.IsNullOrEmpty(Model.Profile.LagnaRashi))
+                {
+                    <div class="text-center py-4" style="color:var(--text-muted);">
+                        <i class="bi bi-stars" style="font-size:2rem;"></i>
+                        <p class="mt-2" style="font-size:0.8rem;">Kundli abhi calculate nahi hui hai.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-2" style="font-size:0.8rem;">
+                        <div class="col-6"><strong style="color:var(--text-muted);">Lagna (Ascendant):</strong><br><span style="color:var(--accent-gold);">@Model.Profile.LagnaRashi</span></div>
+                        <div class="col-6"><strong style="color:var(--text-muted);">Rashi (Moon Sign):</strong><br><span style="color:var(--accent-teal);">@Model.Profile.MoonRashi</span></div>
+                        <div class="col-6"><strong style="color:var(--text-muted);">Sun Sign:</strong><br><span>@Model.Profile.SunRashi</span></div>
+                        <div class="col-6"><strong style="color:var(--text-muted);">Nakshatra:</strong><br><span>@Model.Profile.Nakshatra (Pada @Model.Profile.NakshatraPada)</span></div>
+                        <div class="col-6"><strong style="color:var(--text-muted);">Mahadasha:</strong><br><span style="color:var(--accent-violet);">@Model.Profile.MahadashaCurrent</span></div>
+                        <div class="col-6"><strong style="color:var(--text-muted);">Manglik:</strong><br><span class="badge @(Model.Profile.IsManglik ? "bg-danger" : "bg-success")">@(Model.Profile.IsManglik ? "Yes" : "No")</span></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Scans History Section for this user -->
+    <div class="cosmic-card mb-4">
+        <div class="cosmic-card-header"><i class="bi bi-images me-2"></i>User Scanned Records (@Model.UserScans.Count())</div>
+        @if (!Model.UserScans.Any())
+        {
+            <div class="text-center py-3" style="color:var(--text-muted); font-size:0.85rem;">Koi scan record uplabdh nahi hai.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="cosmic-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Hand/Side</th>
+                            <th>Image</th>
+                            <th>AI Summary</th>
+                            <th>Sync Status</th>
+                            <th>Scanned Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.UserScans)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="plan-badge @(s.ScanType == "Palm" ? "plan-weekly" : "plan-monthly")">
+                                        @s.ScanType
+                                    </span>
+                                </td>
+                                <td>@(s.HandSide ?? "N/A")</td>
+                                <td>
+                                    <a href="@s.ImagePath" target="_blank">
+                                        <img src="@(s.ThumbnailPath ?? s.ImagePath)" alt="Scan thumbnail" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid var(--border-color);" />
+                                    </a>
+                                </td>
+                                <td style="max-width:350px; font-size:0.78rem;">
+                                    @s.SummaryText
+                                </td>
+                                <td>
+                                    <span class="badge @(s.SyncStatus == "Synced" ? "bg-success" : "bg-warning")">@s.SyncStatus</span>
+                                </td>
+                                <td style="color:var(--text-muted); font-size:0.75rem;">@s.ScannedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Ledger / Transaction History for this user -->
+    <div class="cosmic-card">
+        <div class="cosmic-card-header"><i class="bi bi-journal-text me-2"></i>Personal Ledger History</div>
+        @if (!Model.UserLedgerEntries.Items.Any())
+        {
+            <div class="text-center py-3" style="color:var(--text-muted); font-size:0.85rem;">Koi ledger transaction nahi mili.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="cosmic-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount (₹)</th>
+                            <th>Credit Change</th>
+                            <th>Balance After</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in Model.UserLedgerEntries.Items)
+                        {
+                            <tr>
+                                <td style="font-size:0.75rem; color:var(--text-muted);">@l.CreatedAt.ToString("dd MMM yy, HH:mm")</td>
+                                <td>@l.TransactionType</td>
+                                <td style="font-weight:600; color:@(l.AmountINR > 0 ? "var(--accent-green)" : "var(--text-muted)");">
+                                    @(l.AmountINR > 0 ? $"₹{l.AmountINR:N0}" : "—")
+                                </td>
+                                <td style="color:@(l.CreditChange > 0 ? "var(--accent-green)" : (l.CreditChange < 0 ? "var(--accent-red)" : "inherit"));">
+                                    @(l.CreditChange > 0 ? $"+{l.CreditChange}" : l.CreditChange.ToString())
+                                </td>
+                                <td style="color:var(--accent-gold);">@l.BalanceAfter</td>
+                                <td><span class="badge bg-success">@l.Status</span></td>
+                                <td style="font-size:0.78rem; color:var(--text-muted);">@l.Description</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+<!-- Action Modal -->
+<div class="modal fade" id="userActionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalTitle">User Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="ApplyAction" asp-route-id="@Model.Profile?.UserId">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Action" id="inputAction" value="AddCredits" />
+                <div class="modal-body">
+                    <div id="creditsSection" class="mb-3">
+                        <label class="form-label">Credits To Add</label>
+                        <input type="number" name="CreditsToAdd" value="5" min="1" max="500" class="form-control cosmic-input" />
+                    </div>
+                    <div id="planSection" class="mb-3" style="display:none;">
+                        <label class="form-label">Plan Name</label>
+                        <select name="PlanName" class="form-select cosmic-input mb-2">
+                            <option value="Weekly">Weekly (7 Days)</option>
+                            <option value="Monthly" selected>Monthly (30 Days)</option>
+                            <option value="Yearly">Yearly (365 Days)</option>
+                            <option value="Lifetime">Lifetime</option>
+                        </select>
+                        <label class="form-label">Days to Add</label>
+                        <input type="number" name="PlanDays" value="30" min="1" max="365" class="form-control cosmic-input" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Admin Remark</label>
+                        <input type="text" name="AdminRemark" class="form-control cosmic-input" placeholder="e.g. Customer support bonus" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-gold btn-sm">Confirm & Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function openActionModal(actionType) {
+    document.getElementById('inputAction').value = actionType;
+    const creditsSec = document.getElementById('creditsSection');
+    const planSec = document.getElementById('planSection');
+    const title = document.getElementById('actionModalTitle');
+
+    if (actionType === 'AddCredits') {
+        title.innerText = 'Add Scan Credits';
+        creditsSec.style.display = 'block';
+        planSec.style.display = 'none';
+    } else if (actionType === 'AddPlan') {
+        title.innerText = 'Extend Plan Days';
+        creditsSec.style.display = 'none';
+        planSec.style.display = 'block';
+    } else if (actionType === 'Block') {
+        title.innerText = 'Block User Account';
+        creditsSec.style.display = 'none';
+        planSec.style.display = 'none';
+    }
+    new bootstrap.Modal(document.getElementById('userActionModal')).show();
+}
+</script>
+}

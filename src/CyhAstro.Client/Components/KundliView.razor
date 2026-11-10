@@ -1,0 +1,110 @@
+@using CyhAstro.Core.DTOs
+@using CyhAstro.Client.Services
+@inject AstroApiClient ApiClient
+
+<div class="kundli-container">
+    <div class="text-center mb-4">
+        <h3 class="cosmic-title">✦ जन्म पत्रिका (Vedic Kundli) ✦</h3>
+        <p class="cosmic-sub">वैदिक ज्योतिष और खगोलीय गणना पर आधारित</p>
+    </div>
+
+    @if (Kundli == null)
+    {
+        <div class="cosmic-card text-center py-4">
+            <p>Kundli load ho rahi hai...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Key Pillars: Lagna, Rashi, Nakshatra -->
+        <div class="row g-3 mb-4">
+            <div class="col-4">
+                <div class="cosmic-badge-card text-center p-3">
+                    <div class="badge-title">लग्न (Ascendant)</div>
+                    <div class="badge-value" style="color:var(--accent-gold);">@Kundli.LagnaRashi</div>
+                    <div class="badge-degree">@Kundli.LagnaDegree°</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="cosmic-badge-card text-center p-3">
+                    <div class="badge-title">चंद्र राशि (Moon Sign)</div>
+                    <div class="badge-value" style="color:var(--accent-teal);">@Kundli.MoonRashi</div>
+                    <div class="badge-sub">मन व स्वभाव</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="cosmic-badge-card text-center p-3">
+                    <div class="badge-title">नक्षत्र (Nakshatra)</div>
+                    <div class="badge-value" style="color:var(--accent-violet);">@Kundli.Nakshatra</div>
+                    <div class="badge-sub">पाद @Kundli.NakshatraPada</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Special Doshas & Dasha -->
+        <div class="cosmic-card mb-4">
+            <div class="row text-center g-2">
+                <div class="col-6">
+                    <div class="dosha-pill @(Kundli.IsManglik ? "dosha-active" : "dosha-safe")">
+                        <span>मांगलिक दोष:</span> <strong>@(Kundli.IsManglik ? "हाँ (Manglik)" : "नहीं (No)")</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dosha-pill @(Kundli.SadeSatiActive ? "dosha-active" : "dosha-safe")">
+                        <span>साढ़ेसाती:</span> <strong>@(Kundli.SadeSatiActive ? "प्रभावी (Active)" : "नहीं (Safe)")</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 text-center" style="font-size:0.85rem; color:var(--accent-gold);">
+                <i class="bi bi-clock-history me-1"></i> वर्तमान विंशोत्तरी महादशा: <strong>@Kundli.MahadashaCurrent</strong>
+                (समाप्ति: @Kundli.MahadashaEndDate.ToString("dd MMM yyyy"))
+            </div>
+        </div>
+
+        <!-- Planetary Positions Table -->
+        <div class="cosmic-card">
+            <h5 class="cosmic-card-header"><i class="bi bi-globe2 me-2"></i>नवग्रह स्थिति (9 Planets)</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>ग्रह</th>
+                            <th>राशि</th>
+                            <th>अंश (Degree)</th>
+                            <th>स्थिति</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Kundli.Planets)
+                        {
+                            <tr>
+                                <td><strong>@p.NameHindi (@p.Name)</strong></td>
+                                <td style="color:var(--accent-teal);">@p.Rashi</td>
+                                <td>@p.Degree°</td>
+                                <td>
+                                    @if (p.IsExalted)
+                                    {
+                                        <span class="badge bg-success">उच्च (Exalted)</span>
+                                    }
+                                    else if (p.IsDebilitated)
+                                    {
+                                        <span class="badge bg-danger">नीच (Debilitated)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">सामान्य</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public KundliResultDto? Kundli { get; set; }
+}

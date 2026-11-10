@@ -1,0 +1,201 @@
+@page "/Admin/Login"
+@model CyhAstro.Admin.Pages.Admin.LoginModel
+@{
+    Layout = null; // Login page ka apna full layout hai
+}
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login — CyhAstro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 20% 50%, #1a0535 0%, #0a0a1a 50%, #000510 100%);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Stars */
+        .stars {
+            position: fixed; inset: 0; z-index: 0;
+            background-image:
+                radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+                radial-gradient(1px 1px at 55% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 80% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 35% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+                radial-gradient(2px 2px at 90% 80%, rgba(201,168,76,0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 25% 90%, rgba(255,255,255,0.15) 0%, transparent 100%);
+        }
+
+        /* Nebula glow */
+        .nebula {
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
+            top: -100px; left: -100px;
+            pointer-events: none;
+        }
+        .nebula-2 {
+            position: fixed;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(201,168,76,0.08) 0%, transparent 70%);
+            bottom: -50px; right: -50px;
+            pointer-events: none;
+        }
+
+        .login-container {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(18, 13, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(201,168,76,0.1);
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo-symbol {
+            font-size: 2.8rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 20px rgba(201,168,76,0.5));
+        }
+        .logo-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.6rem;
+            color: #c9a84c;
+            letter-spacing: 4px;
+        }
+        .logo-sub {
+            font-size: 0.65rem;
+            color: rgba(144,128,160,0.8);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .form-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(201,168,76,0.7);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(5, 3, 15, 0.7);
+            border: 1px solid rgba(42, 31, 74, 0.8);
+            color: #e8e0f0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: rgba(124,58,237,0.6);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+        }
+        .form-control::placeholder { color: rgba(144,128,160,0.5); }
+
+        .mb-4 { margin-bottom: 20px; }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #7c3aed, #9f5cf7);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            letter-spacing: 1px;
+        }
+        .btn-login:hover { opacity: 0.9; }
+        .btn-login:active { transform: scale(0.99); }
+
+        .error-msg {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.65rem;
+            color: rgba(144,128,160,0.5);
+            letter-spacing: 1px;
+        }
+        .footer-text span { color: rgba(201,168,76,0.5); }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="nebula"></div>
+    <div class="nebula-2"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-area">
+                <div class="logo-symbol">✦</div>
+                <div class="logo-title">CYHASTRO</div>
+                <div class="logo-sub">Admin Portal</div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="error-msg">⚠ @Model.ErrorMessage</div>
+            }
+
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-4">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" name="Email" class="form-control"
+                           placeholder="admin@cyhastro.com" autocomplete="email" required />
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="Password" class="form-control"
+                           placeholder="••••••••" autocomplete="current-password" required />
+                </div>
+                <button type="submit" class="btn-login">
+                    ✦ &nbsp; Enter Admin Portal
+                </button>
+            </form>
+
+            <div class="footer-text">
+                Secured Admin Access &nbsp;•&nbsp; <span>CyhAstro v1.0</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

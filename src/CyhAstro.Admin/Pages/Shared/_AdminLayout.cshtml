@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — CyhAstro Admin</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+    <!-- Google Fonts: Cinzel (mystic), Poppins (body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+    <style>
+        :root {
+            --cosmic-dark:    #0a0a1a;
+            --cosmic-darker:  #05050f;
+            --cosmic-purple:  #1a0a3a;
+            --cosmic-card:    #120d2a;
+            --accent-gold:    #c9a84c;
+            --accent-gold2:   #f0d080;
+            --accent-purple:  #7c3aed;
+            --accent-violet:  #9f5cf7;
+            --accent-teal:    #0ea5e9;
+            --accent-green:   #10b981;
+            --accent-red:     #ef4444;
+            --text-primary:   #e8e0f0;
+            --text-muted:     #9080a0;
+            --border-color:   #2a1f4a;
+            --sidebar-width:  260px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--cosmic-dark);
+            color: var(--text-primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* ========== SIDEBAR ========== */
+        .admin-sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #0d0820 0%, #120d2a 60%, #0a1020 100%);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar-logo h2 {
+            font-family: 'Cinzel', serif;
+            color: var(--accent-gold);
+            font-size: 1.3rem;
+            margin: 0;
+            letter-spacing: 2px;
+        }
+        .sidebar-logo .logo-sub {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav { padding: 16px 0; flex: 1; }
+
+        .nav-section-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            padding: 12px 20px 4px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .sidebar-link:hover {
+            color: var(--text-primary);
+            background: rgba(124, 58, 237, 0.08);
+            border-left-color: var(--accent-purple);
+        }
+        .sidebar-link.active {
+            color: var(--accent-gold);
+            background: rgba(201, 168, 76, 0.08);
+            border-left-color: var(--accent-gold);
+        }
+        .sidebar-link i { font-size: 1rem; width: 20px; }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .admin-main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-topbar {
+            background: rgba(10, 8, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        .topbar-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .topbar-badge {
+            background: rgba(201, 168, 76, 0.1);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+        }
+
+        .admin-content { padding: 28px; flex: 1; }
+
+        /* ========== CARDS ========== */
+        .cosmic-card {
+            background: var(--cosmic-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .cosmic-card-header {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            color: var(--accent-gold);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            background: var(--cosmic-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            filter: blur(30px);
+            opacity: 0.3;
+        }
+        .stat-card.gold::before   { background: var(--accent-gold); }
+        .stat-card.purple::before { background: var(--accent-purple); }
+        .stat-card.teal::before   { background: var(--accent-teal); }
+        .stat-card.green::before  { background: var(--accent-green); }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(201,168,76,0.3); }
+
+        .stat-icon {
+            width: 44px; height: 44px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+        .stat-icon.gold   { background: rgba(201,168,76,0.12); color: var(--accent-gold); }
+        .stat-icon.purple { background: rgba(124,58,237,0.12); color: var(--accent-violet); }
+        .stat-icon.teal   { background: rgba(14,165,233,0.12); color: var(--accent-teal); }
+        .stat-icon.green  { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-change { font-size: 0.75rem; margin-top: 8px; }
+        .stat-change.up   { color: var(--accent-green); }
+        .stat-change.down { color: var(--accent-red); }
+
+        /* ========== TABLE ========== */
+        .cosmic-table { width: 100%; border-collapse: collapse; }
+        .cosmic-table thead th {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+        .cosmic-table tbody tr {
+            border-bottom: 1px solid rgba(42, 31, 74, 0.6);
+            transition: background 0.15s;
+        }
+        .cosmic-table tbody tr:hover { background: rgba(124, 58, 237, 0.05); }
+        .cosmic-table tbody td {
+            padding: 12px 14px;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        /* Badges */
+        .plan-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .plan-free     { background: rgba(144,128,160,0.1); color: var(--text-muted); border: 1px solid #3a2f5a; }
+        .plan-weekly   { background: rgba(14,165,233,0.1); color: var(--accent-teal); border: 1px solid rgba(14,165,233,0.3); }
+        .plan-monthly  { background: rgba(201,168,76,0.1); color: var(--accent-gold); border: 1px solid rgba(201,168,76,0.3); }
+        .plan-yearly   { background: rgba(16,185,129,0.1); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+        .plan-lifetime { background: rgba(159,92,247,0.1); color: var(--accent-violet); border: 1px solid rgba(159,92,247,0.3); }
+
+        .status-active  { background: rgba(16,185,129,0.1); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+        .status-blocked { background: rgba(239,68,68,0.1); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+
+        /* Buttons */
+        .btn-cosmic {
+            background: linear-gradient(135deg, #7c3aed, #9f5cf7);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-cosmic:hover { opacity: 0.85; color: white; }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #c9a84c, #f0d080);
+            color: #0a0a1a;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-gold:hover { opacity: 0.9; color: #0a0a1a; }
+
+        /* Forms */
+        .cosmic-input {
+            background: rgba(10, 8, 20, 0.6) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            border-radius: 8px !important;
+        }
+        .cosmic-input:focus {
+            border-color: var(--accent-purple) !important;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+        }
+        .cosmic-input::placeholder { color: var(--text-muted) !important; }
+        .cosmic-select { background: rgba(10, 8, 20, 0.6) !important; }
+
+        /* Alert */
+        .alert-cosmic {
+            background: rgba(201, 168, 76, 0.08);
+            border: 1px solid rgba(201, 168, 76, 0.25);
+            color: var(--accent-gold2);
+            border-radius: 8px;
+        }
+
+        /* Avatar */
+        .user-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #c9a84c);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Stars background */
+        .stars-bg {
+            position: fixed;
+            top: 0; left: var(--sidebar-width); right: 0; bottom: 0;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 70% 15%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 85% 60%, rgba(255,255,255,0.15) 0%, transparent 100%),
+                radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.15) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Pagination */
+        .page-link { background: var(--cosmic-card); border-color: var(--border-color); color: var(--text-muted); }
+        .page-link:hover { background: rgba(124,58,237,0.1); color: var(--accent-gold); border-color: var(--accent-purple); }
+        .page-item.active .page-link { background: var(--accent-purple); border-color: var(--accent-purple); color: white; }
+
+        /* Modal */
+        .modal-content { background: var(--cosmic-card); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .modal-header { border-bottom: 1px solid var(--border-color); }
+        .modal-footer { border-top: 1px solid var(--border-color); }
+        .modal-title { font-family: 'Cinzel', serif; color: var(--accent-gold); font-size: 1rem; }
+        .btn-close { filter: invert(1); }
+
+        @@media (max-width: 768px) {
+            .admin-sidebar { transform: translateX(-100%); }
+            .admin-main { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Stars Background -->
+    <div class="stars-bg"></div>
+
+    <!-- Sidebar -->
+    <nav class="admin-sidebar">
+        <div class="sidebar-logo">
+            <h2>✦ CYHASTRO</h2>
+            <div class="logo-sub">Admin Portal</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="/Admin" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+
+            <div class="nav-section-label">Users</div>
+            <a href="/Admin/Users" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Users" ? "active" : "")">
+                <i class="bi bi-people"></i> All Users
+            </a>
+            <a href="/Admin/Ledger" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Ledger" ? "active" : "")">
+                <i class="bi bi-journal-bookmark"></i> Ledger / Khata
+            </a>
+            <a href="/Admin/Scans" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Scans" ? "active" : "")">
+                <i class="bi bi-hand-index-thumb"></i> Scan History
+            </a>
+
+            <div class="nav-section-label">System</div>
+            <a href="/Admin/AppVersions" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "AppVersions" ? "active" : "")">
+                <i class="bi bi-phone"></i> App Versions
+            </a>
+            <a href="/Admin/Settings" class="sidebar-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
+                <i class="bi bi-gear"></i> Settings
+            </a>
+
+            <div class="nav-section-label">Account</div>
+            <a href="/Admin/Logout" class="sidebar-link">
+                <i class="bi bi-box-arrow-left"></i> Logout
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div>CyhAstro Admin v1.0</div>
+            <div style="color: #c9a84c; margin-top: 2px;">✦ Cosmic Intelligence</div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+        <!-- Top Bar -->
+        <div class="admin-topbar">
+            <div class="topbar-title">@ViewData["Title"]</div>
+            <div class="topbar-right">
+                <span class="topbar-badge">⬡ ADMIN</span>
+                <span style="color: var(--text-muted); font-size:0.78rem;">
+                    <i class="bi bi-clock"></i>
+                    <span id="topbar-time"></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="admin-content" style="position: relative; z-index: 1;">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        // Live Clock
+        function updateClock() {
+            const el = document.getElementById('topbar-time');
+            if (el) {
+                const now = new Date();
+                el.textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 60000);
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

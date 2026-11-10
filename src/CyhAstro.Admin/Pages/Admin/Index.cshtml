@@ -1,0 +1,175 @@
+@page "/Admin"
+@model CyhAstro.Admin.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["ActivePage"] = "Dashboard";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+<!-- Stat Cards Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card gold">
+            <div class="stat-icon gold"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-value">@Model.Stats.TotalUsers.ToString("N0")</div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-change up"><i class="bi bi-arrow-up-short"></i> +@Model.Stats.NewUsersToday aaj</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card purple">
+            <div class="stat-icon purple"><i class="bi bi-star-fill"></i></div>
+            <div class="stat-value">@Model.Stats.ActiveSubscribers.ToString("N0")</div>
+            <div class="stat-label">Active Subscribers</div>
+            <div class="stat-change" style="color: var(--accent-violet);">
+                <i class="bi bi-lightning-fill"></i> Premium Users
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card teal">
+            <div class="stat-icon teal"><i class="bi bi-hand-index-thumb-fill"></i></div>
+            <div class="stat-value">@Model.Stats.TotalScansToday.ToString("N0")</div>
+            <div class="stat-label">Scans Today</div>
+            <div class="stat-change" style="color: var(--accent-teal);">
+                <i class="bi bi-hand-index-thumb"></i> @Model.Stats.PalmScansToday Palm &nbsp;
+                <i class="bi bi-person-bounding-box"></i> @Model.Stats.FaceScansToday Face
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card green">
+            <div class="stat-icon green"><i class="bi bi-currency-rupee"></i></div>
+            <div class="stat-value">₹@Model.Stats.RevenueToday.ToString("N0")</div>
+            <div class="stat-label">Revenue Today</div>
+            <div class="stat-change up">
+                <i class="bi bi-graph-up"></i> ₹@Model.Stats.RevenueThisMonth.ToString("N0") this month
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue Chart + Recent Activity -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header">
+                <i class="bi bi-graph-up-arrow me-2"></i>Revenue Overview
+            </div>
+            <canvas id="revenueChart" height="100"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="cosmic-card h-100">
+            <div class="cosmic-card-header">
+                <i class="bi bi-pie-chart me-2"></i>Users by Plan
+            </div>
+            <canvas id="planChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- All Time Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-trophy me-2"></i>All Time Summary</div>
+            <div class="row text-center g-3">
+                <div class="col-md-4">
+                    <div style="font-size:2rem; font-weight:700; color: var(--accent-gold);">
+                        ₹@Model.Stats.RevenueTotalAllTime.ToString("N0")
+                    </div>
+                    <div style="color: var(--text-muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Total Revenue</div>
+                </div>
+                <div class="col-md-4">
+                    <div style="font-size:2rem; font-weight:700; color: var(--accent-violet);">
+                        @Model.Stats.TotalUsers.ToString("N0")
+                    </div>
+                    <div style="color: var(--text-muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Total Users Registered</div>
+                </div>
+                <div class="col-md-4">
+                    <div style="font-size:2rem; font-weight:700; color: var(--accent-teal);">
+                        @Model.Stats.ActiveSubscribers.ToString("N0")
+                    </div>
+                    <div style="color: var(--text-muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Paying Subscribers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-lightning me-2"></i>Quick Actions</div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/Admin/Users" class="btn btn-cosmic"><i class="bi bi-people me-2"></i>Manage Users</a>
+                <a href="/Admin/Ledger" class="btn btn-cosmic"><i class="bi bi-journal-bookmark me-2"></i>View Ledger</a>
+                <a href="/Admin/AppVersions" class="btn btn-gold"><i class="bi bi-upload me-2"></i>Push App Update</a>
+                <a href="/Admin/Settings" class="btn" style="background:rgba(42,31,74,0.8); color: var(--text-primary); border: 1px solid var(--border-color);">
+                    <i class="bi bi-gear me-2"></i>Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// Revenue Chart (dummy data - will connect to real SP data)
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+            label: 'Revenue (₹)',
+            data: [1200, 1900, 1400, 2200, 1800, 2800, 2100],
+            borderColor: '#c9a84c',
+            backgroundColor: 'rgba(201, 168, 76, 0.08)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#c9a84c',
+            pointRadius: 4,
+        }, {
+            label: 'Scans',
+            data: [45, 72, 56, 88, 67, 102, 78],
+            borderColor: '#7c3aed',
+            backgroundColor: 'rgba(124, 58, 237, 0.06)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#7c3aed',
+            pointRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#9080a0', font: { family: 'Poppins' } } } },
+        scales: {
+            x: { ticks: { color: '#9080a0' }, grid: { color: 'rgba(42,31,74,0.6)' } },
+            y: { ticks: { color: '#9080a0' }, grid: { color: 'rgba(42,31,74,0.6)' } }
+        }
+    }
+});
+
+// Plan Distribution Donut
+const planCtx = document.getElementById('planChart').getContext('2d');
+new Chart(planCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Free', 'Weekly', 'Monthly', 'Yearly'],
+        datasets: [{
+            data: [@(Model.Stats.TotalUsers - Model.Stats.ActiveSubscribers), 20, @Model.Stats.ActiveSubscribers, 10],
+            backgroundColor: ['rgba(42,31,74,0.8)', 'rgba(14,165,233,0.7)', 'rgba(201,168,76,0.7)', 'rgba(16,185,129,0.7)'],
+            borderColor: ['#2a1f4a', '#0ea5e9', '#c9a84c', '#10b981'],
+            borderWidth: 1,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { color: '#9080a0', font: { family: 'Poppins' }, boxWidth: 12 } } }
+    }
+});
+</script>
+}

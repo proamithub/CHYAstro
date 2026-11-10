@@ -1,0 +1,90 @@
+@using CyhAstro.Core.DTOs
+@using CyhAstro.Client.Services
+@inject AstroApiClient ApiClient
+
+<div class="modal fade show" style="display: @(IsOpen ? "block" : "none"); background: rgba(0,0,0,0.85);" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cosmic-modal-card">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
+            </div>
+            <div class="modal-body text-center pt-0 px-4">
+                <div class="paywall-sparkle">✦ ✦ ✦</div>
+                <h3 class="paywall-title mb-1">Unlock CyhAstro Gold</h3>
+                <p class="paywall-sub mb-4">अनलिमिटेड हस्तरेखा, सामुद्रिक शास्त्र और सम्पूर्ण कुंडली उपाय</p>
+
+                <!-- Plan Selection Cards -->
+                <div class="row g-2 mb-4">
+                    <!-- Weekly -->
+                    <div class="col-4">
+                        <div class="plan-card @(SelectedPlan == "Weekly" ? "active" : "")" @onclick='() => SelectedPlan = "Weekly"'>
+                            <div class="plan-card-name">साप्ताहिक</div>
+                            <div class="plan-card-price">₹99</div>
+                            <div class="plan-card-sub">/ 7 Days</div>
+                        </div>
+                    </div>
+                    <!-- Monthly (Popular) -->
+                    <div class="col-4">
+                        <div class="plan-card popular @(SelectedPlan == "Monthly" ? "active" : "")" @onclick='() => SelectedPlan = "Monthly"'>
+                            <div class="popular-ribbon">POPULAR</div>
+                            <div class="plan-card-name">मासिक</div>
+                            <div class="plan-card-price">₹299</div>
+                            <div class="plan-card-sub">/ Month</div>
+                        </div>
+                    </div>
+                    <!-- Yearly -->
+                    <div class="col-4">
+                        <div class="plan-card @(SelectedPlan == "Yearly" ? "active" : "")" @onclick='() => SelectedPlan = "Yearly"'>
+                            <div class="plan-card-name">वार्षिक</div>
+                            <div class="plan-card-price">₹1,999</div>
+                            <div class="plan-card-sub">/ Year</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Included -->
+                <ul class="list-unstyled text-start mb-4" style="font-size:0.85rem; line-height:2.2;">
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i> Unlimited 4-Line Palm Analysis & Timeline</li>
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i> Samudrik Shastra Face Reading (3 Zones)</li>
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i> Complete 25-Page Vedic Kundli PDF Report</li>
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i> Unlimited AI Astrologer Chat</li>
+                </ul>
+
+                <button class="btn btn-gold btn-lg w-100 py-3 shadow" @onclick="UpgradeAsync" disabled="@IsProcessing">
+                    <i class="bi bi-lightning-charge-fill me-1"></i> @(IsProcessing ? "Processing..." : "Subscribe Now")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnSubscribed { get; set; }
+
+    public string SelectedPlan { get; set; } = "Monthly";
+    public bool IsProcessing { get; set; }
+
+    public void Close()
+    {
+        IsOpen = false;
+        IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task UpgradeAsync()
+    {
+        IsProcessing = true;
+        try
+        {
+            // Payment Gateway trigger callback / simulated success for dev
+            await Task.Delay(500);
+            await OnSubscribed.InvokeAsync();
+            Close();
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+}

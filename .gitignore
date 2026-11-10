@@ -1,0 +1,28 @@
+## Ignore build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Ignore sensitive files — NEVER commit these!
+appsettings.Production.json
+**/appsettings.Production.json
+*.pfx
+*.p12
+
+## NuGet
+.nuget/
+packages/
+*.nupkg
+
+## Logs
+*.log
+logs/
+
+## Uploaded images (user data — don't commit)
+**/wwwroot/uploads/
+
+## OS files
+.DS_Store
+Thumbs.db

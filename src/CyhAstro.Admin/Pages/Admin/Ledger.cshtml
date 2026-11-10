@@ -1,0 +1,136 @@
+@page "/Admin/Ledger"
+@model CyhAstro.Admin.Pages.Admin.LedgerModel
+@{
+    ViewData["Title"] = "Ledger / Khata";
+    ViewData["ActivePage"] = "Ledger";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+<!-- Filters -->
+<div class="cosmic-card mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">From Date</label>
+            <input type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control cosmic-input" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">To Date</label>
+            <input type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control cosmic-input" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-cosmic w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+        </div>
+        <div class="col-md-2">
+            <a href="/Admin/Ledger" class="btn w-100" style="background:rgba(42,31,74,0.8); color:var(--text-muted); border:1px solid var(--border-color);">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+            </a>
+        </div>
+        <div class="col-md-2">
+            <a href="/Admin/Ledger?export=csv&from=@Model.From?.ToString("yyyy-MM-dd")&to=@Model.To?.ToString("yyyy-MM-dd")"
+               class="btn btn-gold w-100">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Ledger Table -->
+<div class="cosmic-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="cosmic-card-header mb-0" style="border:none; padding-bottom:0;">
+            <i class="bi bi-journal-bookmark me-2"></i>Transaction Ledger
+            <span style="color:var(--text-muted); font-size:0.75rem; margin-left:8px;">(@Model.Ledger.TotalCount records)</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="cosmic-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>User</th>
+                    <th>Transaction Type</th>
+                    <th>Amount (₹)</th>
+                    <th>Credits</th>
+                    <th>Balance After</th>
+                    <th>Gateway</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var txn in Model.Ledger.Items)
+                {
+                    <tr>
+                        <td style="color:var(--text-muted); font-size:0.78rem; white-space:nowrap;">
+                            @txn.CreatedAt.ToString("dd MMM yy")<br/>
+                            <span style="font-size:0.68rem;">@txn.CreatedAt.ToString("HH:mm:ss")</span>
+                        </td>
+                        <td>
+                            <div style="font-weight:500; font-size:0.82rem;">@txn.UserName</div>
+                            <div style="font-size:0.68rem; color:var(--text-muted);">@(txn.UserEmail ?? txn.UserPhone)</div>
+                        </td>
+                        <td>
+                            @{
+                                var typeIcon = txn.TransactionType switch {
+                                    "SubscriptionPurchase" => ("bi-credit-card-fill", "var(--accent-gold)"),
+                                    "ScanDeduction"        => ("bi-hand-index-thumb-fill", "var(--accent-teal)"),
+                                    "AdminAdjustment"      => ("bi-shield-fill", "var(--accent-violet)"),
+                                    "WelcomeCredit"        => ("bi-gift-fill", "var(--accent-green)"),
+                                    "Refund"               => ("bi-arrow-left-circle-fill", "var(--accent-red)"),
+                                    _                      => ("bi-circle-fill", "var(--text-muted)")
+                                };
+                            }
+                            <span style="color:@typeIcon.Item2; font-size:0.8rem;">
+                                <i class="bi @typeIcon.Item1 me-1"></i>@txn.TransactionType
+                            </span>
+                        </td>
+                        <td style="font-weight:600; @(txn.AmountINR > 0 ? "color: var(--accent-green);" : "color: var(--text-muted);")">
+                            @(txn.AmountINR > 0 ? $"+ ₹{txn.AmountINR:N2}" : "—")
+                        </td>
+                        <td>
+                            @if (txn.CreditChange > 0)
+                            {
+                                <span style="color:var(--accent-green);">+@txn.CreditChange</span>
+                            }
+                            else if (txn.CreditChange < 0)
+                            {
+                                <span style="color:var(--accent-red);">@txn.CreditChange</span>
+                            }
+                            else { <span style="color:var(--text-muted);">0</span> }
+                        </td>
+                        <td style="color:var(--accent-gold);">@txn.BalanceAfter</td>
+                        <td style="font-size:0.75rem; color:var(--text-muted);">@(txn.PaymentGateway ?? "—")</td>
+                        <td>
+                            <span class="plan-badge @(txn.Status == "Success" ? "status-active" : "status-blocked")">
+                                @txn.Status
+                            </span>
+                        </td>
+                        <td style="font-size:0.76rem; color:var(--text-muted); max-width:200px;">
+                            @txn.Description
+                            @if (!string.IsNullOrEmpty(txn.AdminRemark))
+                            {
+                                <div style="color:var(--accent-violet); font-size:0.68rem;">📌 @txn.AdminRemark</div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.Ledger.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination pagination-sm justify-content-center">
+                @for (int i = 1; i <= Math.Min(Model.Ledger.TotalPages, 10); i++)
+                {
+                    <li class="page-item @(i == Model.Ledger.PageNumber ? "active" : "")">
+                        <a class="page-link" href="?page=@i&from=@Model.From?.ToString("yyyy-MM-dd")&to=@Model.To?.ToString("yyyy-MM-dd")">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>

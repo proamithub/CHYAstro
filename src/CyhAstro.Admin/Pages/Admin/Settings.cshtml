@@ -1,0 +1,89 @@
+@page "/Admin/Settings"
+@model CyhAstro.Admin.Pages.Admin.SettingsModel
+@{
+    ViewData["Title"] = "Settings";
+    ViewData["ActivePage"] = "Settings";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-cosmic mb-3 p-3" role="alert">✅ @TempData["Success"]</div>
+}
+
+<div class="row g-3">
+    <!-- Plan Prices -->
+    <div class="col-lg-6">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-currency-rupee me-2"></i>Plan Prices (INR)</div>
+            <form method="post" asp-page-handler="SavePrices">
+                @Html.AntiForgeryToken()
+                @foreach (var key in new[] { "PriceWeeklyINR", "PriceMonthlyINR", "PriceYearlyINR" })
+                {
+                    var label = key switch {
+                        "PriceWeeklyINR"  => "Weekly Plan (₹)",
+                        "PriceMonthlyINR" => "Monthly Plan (₹)",
+                        "PriceYearlyINR"  => "Yearly Plan (₹)",
+                        _ => key
+                    };
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">@label</label>
+                        <input type="number" name="@key" value="@Model.Settings.GetValueOrDefault(key, "0")"
+                               class="form-control cosmic-input" min="0" />
+                    </div>
+                }
+                <button type="submit" class="btn btn-gold w-100"><i class="bi bi-save me-2"></i>Save Prices</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Free Quotas -->
+    <div class="col-lg-6">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-gift me-2"></i>Free User Quotas</div>
+            <form method="post" asp-page-handler="SaveQuotas">
+                @Html.AntiForgeryToken()
+                @foreach (var key in new[] { "FreeUserPalmScans", "FreeUserFaceScans", "FreeUserChatLimit", "PaidUserPalmScans", "PaidUserFaceScans" })
+                {
+                    var label = key switch {
+                        "FreeUserPalmScans"  => "Free Users — Palm Scans",
+                        "FreeUserFaceScans"  => "Free Users — Face Scans",
+                        "FreeUserChatLimit"  => "Free Users — Daily Chat Questions",
+                        "PaidUserPalmScans"  => "Paid Users — Palm Scans",
+                        "PaidUserFaceScans"  => "Paid Users — Face Scans",
+                        _ => key
+                    };
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">@label</label>
+                        <input type="number" name="@key" value="@Model.Settings.GetValueOrDefault(key, "0")"
+                               class="form-control cosmic-input" min="0" />
+                    </div>
+                }
+                <button type="submit" class="btn btn-cosmic w-100"><i class="bi bi-save me-2"></i>Save Quotas</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI Prompts -->
+    <div class="col-12">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-stars me-2"></i>AI Prompts (Gemini Vision — Code Se Nahi, Yahan Edit Karo)</div>
+            <form method="post" asp-page-handler="SavePrompts">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">
+                        Palm Reading Prompt (Hast Rekha)
+                    </label>
+                    <textarea name="GeminiPalmPrompt" rows="8" class="form-control cosmic-input" style="font-size:0.8rem; font-family:monospace;">@Model.Settings.GetValueOrDefault("GeminiPalmPrompt", "")</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">
+                        Face Reading Prompt (Samudrik Shastra)
+                    </label>
+                    <textarea name="GeminiFacePrompt" rows="8" class="form-control cosmic-input" style="font-size:0.8rem; font-family:monospace;">@Model.Settings.GetValueOrDefault("GeminiFacePrompt", "")</textarea>
+                </div>
+                <button type="submit" class="btn btn-gold"><i class="bi bi-robot me-2"></i>Save AI Prompts</button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,226 @@
+@page "/Admin/Users"
+@model CyhAstro.Admin.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Title"] = "Users Management";
+    ViewData["ActivePage"] = "Users";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+<!-- Filters -->
+<div class="cosmic-card mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">Search</label>
+            <input type="text" name="search" value="@Model.Search" class="form-control cosmic-input" placeholder="Name, Email, Phone..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">Plan</label>
+            <select name="plan" class="form-select cosmic-input cosmic-select">
+                <option value="">All Plans</option>
+                <option value="Free" selected="@(Model.PlanFilter=="Free")">Free</option>
+                <option value="Weekly" selected="@(Model.PlanFilter=="Weekly")">Weekly</option>
+                <option value="Monthly" selected="@(Model.PlanFilter=="Monthly")">Monthly</option>
+                <option value="Yearly" selected="@(Model.PlanFilter=="Yearly")">Yearly</option>
+                <option value="Lifetime" selected="@(Model.PlanFilter=="Lifetime")">Lifetime</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px;">Status</label>
+            <select name="status" class="form-select cosmic-input cosmic-select">
+                <option value="">All Status</option>
+                <option value="Active" selected="@(Model.StatusFilter=="Active")">Active</option>
+                <option value="Blocked" selected="@(Model.StatusFilter=="Blocked")">Blocked</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-cosmic w-100"><i class="bi bi-search me-1"></i>Search</button>
+        </div>
+        <div class="col-md-2">
+            <a href="/Admin/Users" class="btn w-100" style="background:rgba(42,31,74,0.8); color:var(--text-muted); border:1px solid var(--border-color);">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Users Table -->
+<div class="cosmic-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="cosmic-card-header mb-0" style="border:none; padding-bottom:0;">
+            <i class="bi bi-people me-2"></i>Users
+            <span style="color: var(--text-muted); font-size:0.75rem; margin-left:8px;">
+                (@Model.Users.TotalCount total)
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="cosmic-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Contact</th>
+                    <th>DOB</th>
+                    <th>Plan</th>
+                    <th>Credits</th>
+                    <th>Scans</th>
+                    <th>Last Login</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Users.Items)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar">@user.FullName[0]</div>
+                                <div>
+                                    <div style="font-weight:500;">@user.FullName</div>
+                                    <div style="font-size:0.68rem; color:var(--text-muted);">
+                                        Joined @user.CreatedAt.ToString("dd MMM yyyy")
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size:0.8rem;">@(user.Email ?? user.PhoneNumber ?? "—")</div>
+                        </td>
+                        <td>@user.DateOfBirth.ToString("dd MMM yyyy")</td>
+                        <td>
+                            <span class="plan-badge plan-@user.Plan.ToLower()">@user.Plan</span>
+                            @if (user.IsSubActive && user.ExpiryDate.HasValue)
+                            {
+                                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:2px;">
+                                    Till @user.ExpiryDate.Value.ToString("dd MMM yy")
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <div style="font-size:0.78rem;">
+                                <span style="color:var(--accent-teal);">🖐 @user.PalmScansRemaining</span> &nbsp;
+                                <span style="color:var(--accent-violet);">👤 @user.FaceScansRemaining</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="color:var(--accent-gold);">@user.TotalScans</span>
+                        </td>
+                        <td style="color:var(--text-muted); font-size:0.78rem;">
+                            @(user.LastLoginAt.HasValue ? user.LastLoginAt.Value.ToString("dd MMM, HH:mm") : "Never")
+                        </td>
+                        <td>
+                            <span class="plan-badge @(user.IsBlocked ? "status-blocked" : "status-active")">
+                                @(user.IsBlocked ? "Blocked" : "Active")
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="/Admin/Users/@user.UserId" class="btn btn-sm btn-cosmic" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button class="btn btn-sm" title="Quick Action"
+                                        style="background:rgba(42,31,74,0.8); color:var(--text-muted); border:1px solid var(--border-color);"
+                                        onclick="openAction('@user.UserId', '@user.FullName')">
+                                    <i class="bi bi-lightning"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.Users.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination pagination-sm justify-content-center">
+                @for (int i = 1; i <= Model.Users.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Users.PageNumber ? "active" : "")">
+                        <a class="page-link" href="?page=@i&search=@Model.Search&plan=@Model.PlanFilter&status=@Model.StatusFilter">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+<!-- Quick Action Modal -->
+<div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-lightning me-2"></i>Quick Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="Adjust">
+                <div class="modal-body">
+                    <input type="hidden" id="modal-userId" name="TargetUserId" />
+                    <p style="color:var(--text-muted);">
+                        User: <strong id="modal-userName" style="color:var(--accent-gold);"></strong>
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.78rem;">Action</label>
+                        <select name="Action" class="form-select cosmic-input" id="actionType" onchange="toggleFields()">
+                            <option value="AddCredits">➕ Add Scan Credits</option>
+                            <option value="AddPlan">📅 Add Plan Days</option>
+                            <option value="Block">🚫 Block User</option>
+                            <option value="Unblock">✅ Unblock User</option>
+                        </select>
+                    </div>
+
+                    <div id="credits-field" class="mb-3">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.78rem;">Credits to Add</label>
+                        <input type="number" name="CreditsToAdd" value="5" min="1" max="999" class="form-control cosmic-input" />
+                    </div>
+
+                    <div id="plan-fields" class="mb-3" style="display:none;">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label" style="color:var(--text-muted); font-size:0.78rem;">Plan Name</label>
+                                <select name="PlanName" class="form-select cosmic-input">
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Monthly" selected>Monthly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="Lifetime">Lifetime</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" style="color:var(--text-muted); font-size:0.78rem;">Days to Add</label>
+                                <input type="number" name="PlanDays" value="30" min="1" max="365" class="form-control cosmic-input" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.78rem;">Remark (optional)</label>
+                        <input type="text" name="AdminRemark" class="form-control cosmic-input" placeholder="Reason / note..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-bs-dismiss="modal" style="color:var(--text-muted);">Cancel</button>
+                    <button type="submit" class="btn btn-gold"><i class="bi bi-check2-circle me-1"></i>Apply Action</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function openAction(userId, userName) {
+    document.getElementById('modal-userId').value = userId;
+    document.getElementById('modal-userName').textContent = userName;
+    new bootstrap.Modal(document.getElementById('actionModal')).show();
+}
+function toggleFields() {
+    const action = document.getElementById('actionType').value;
+    document.getElementById('credits-field').style.display = action === 'AddCredits' ? 'block' : 'none';
+    document.getElementById('plan-fields').style.display = action === 'AddPlan' ? 'block' : 'none';
+}
+</script>
+}

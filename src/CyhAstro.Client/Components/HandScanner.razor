@@ -1,0 +1,129 @@
+@using CyhAstro.Client.Services
+@using CyhAstro.Core.DTOs
+@inject AstroApiClient ApiClient
+@inject OfflineSyncEngine SyncEngine
+
+<div class="scanner-container">
+    <div class="scanner-header text-center">
+        <h3 class="cosmic-title">✦ हस्तरेखा स्कैनर (Palmistry) ✦</h3>
+        <p class="cosmic-sub">Apna seedha (Right) haath frame ke andar rakhein</p>
+    </div>
+
+    <!-- Scanner Viewport with Hand Overlay -->
+    <div class="camera-viewport">
+        <div class="hand-contour-overlay">
+            <svg viewBox="0 0 200 300" class="hand-svg">
+                <!-- Outer Hand Outline Path -->
+                <path d="M 60,250 C 50,220 40,160 30,120 C 25,100 45,95 50,115 C 55,80 75,75 80,105 C 85,60 105,55 110,95 C 115,80 135,75 140,110 C 145,150 160,200 150,250 Z" 
+                      fill="none" stroke="rgba(201, 168, 76, 0.6)" stroke-width="2.5" stroke-dasharray="6,4" />
+                <!-- Major Palm Lines -->
+                <path d="M 60,190 Q 95,200 135,170" fill="none" stroke="rgba(239, 68, 68, 0.7)" stroke-width="1.8" /> <!-- Heart Line -->
+                <path d="M 60,190 Q 95,215 130,220" fill="none" stroke="rgba(14, 165, 233, 0.7)" stroke-width="1.8" /> <!-- Head Line -->
+                <path d="M 60,190 Q 75,230 90,260" fill="none" stroke="rgba(16, 185, 129, 0.7)" stroke-width="1.8" /> <!-- Life Line -->
+            </svg>
+            <div class="scan-laser-line"></div>
+        </div>
+
+        @if (IsScanning)
+        {
+            <div class="scanner-loading-overlay">
+                <div class="cosmic-spinner"></div>
+                <p class="mt-3">AI Rekhaayein Padh Raha Hai...</p>
+            </div>
+        }
+    </div>
+
+    <!-- Instructions & Controls -->
+    <div class="scanner-controls text-center mt-3">
+        <div class="d-flex justify-content-center gap-3 mb-3">
+            <button class="btn btn-sm @(SelectedHand == "Right" ? "btn-gold" : "btn-dark")" @onclick='() => SelectedHand = "Right"'>
+                Right Hand (दायां)
+            </button>
+            <button class="btn btn-sm @(SelectedHand == "Left" ? "btn-gold" : "btn-dark")" @onclick='() => SelectedHand = "Left"'>
+                Left Hand (बायां)
+            </button>
+        </div>
+
+        <button class="btn btn-gold btn-lg px-5 shadow-lg" @onclick="CaptureAndScanAsync" disabled="@IsScanning">
+            <i class="bi bi-camera me-2"></i> @(IsScanning ? "Analyzing..." : "Capture & Scan")
+        </button>
+    </div>
+
+    <!-- Scan Results Card -->
+    @if (Result?.PalmAnalysis != null)
+    {
+        <div class="cosmic-card mt-4">
+            <h4 class="cosmic-card-header text-center">✦ Aapki Hastrekha Ka Vishleshan ✦</h4>
+
+            <!-- Life Line (Jeevan Rekha) -->
+            <div class="line-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="line-name" style="color:var(--accent-green);">जीवन रेखा (Life Line)</span>
+                    <span class="badge bg-success">@Result.PalmAnalysis.LifeLine.Strength</span>
+                </div>
+                <p class="line-summary mt-1">@Result.PalmAnalysis.LifeLine.Summary</p>
+            </div>
+
+            <!-- Head Line (Mastishk Rekha) -->
+            <div class="line-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="line-name" style="color:var(--accent-teal);">मस्तिष्क रेखा (Head Line)</span>
+                    <span class="badge bg-info">@Result.PalmAnalysis.HeadLine.Strength</span>
+                </div>
+                <p class="line-summary mt-1">@Result.PalmAnalysis.HeadLine.Summary</p>
+            </div>
+
+            <!-- Heart Line (Hriday Rekha) -->
+            <div class="line-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="line-name" style="color:#ef4444;">हृदय रेखा (Heart Line)</span>
+                    <span class="badge bg-danger">@Result.PalmAnalysis.HeartLine.Strength</span>
+                </div>
+                <p class="line-summary mt-1">@Result.PalmAnalysis.HeartLine.Summary</p>
+            </div>
+
+            <!-- Fate Line (Bhagya Rekha) -->
+            <div class="line-result-item mb-3 @(Result.PalmAnalysis.FateLine.IsLocked ? "locked-section" : "")">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="line-name" style="color:var(--accent-gold);">भाग्य रेखा (Fate Line)</span>
+                    @if (Result.PalmAnalysis.FateLine.IsLocked)
+                    {
+                        <span class="badge bg-warning text-dark"><i class="bi bi-lock-fill"></i> Premium</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">@Result.PalmAnalysis.FateLine.Strength</span>
+                    }
+                </div>
+                <p class="line-summary mt-1">@Result.PalmAnalysis.FateLine.Summary</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public string SelectedHand { get; set; } = "Right";
+    public bool IsScanning { get; set; }
+    public ScanResultDto? Result { get; set; }
+
+    private async Task CaptureAndScanAsync()
+    {
+        IsScanning = true;
+        try
+        {
+            // Dummy byte array for testing/preview capture
+            var sampleBytes = new byte[1024];
+            using var ms = new MemoryStream(sampleBytes);
+            Result = await ApiClient.ScanPalmAsync(ms, "palm_capture.jpg", SelectedHand);
+        }
+        catch
+        {
+            // Offline fallback
+            SyncEngine.QueueScanOffline("Palm", SelectedHand, new byte[512], "offline_palm.jpg");
+        }
+        finally
+        {
+            IsScanning = false;
+        }
+    }
+}

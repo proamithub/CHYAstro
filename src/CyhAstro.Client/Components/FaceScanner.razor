@@ -1,0 +1,102 @@
+@using CyhAstro.Client.Services
+@using CyhAstro.Core.DTOs
+@inject AstroApiClient ApiClient
+@inject OfflineSyncEngine SyncEngine
+
+<div class="scanner-container">
+    <div class="scanner-header text-center">
+        <h3 class="cosmic-title">✦ सामुद्रिक शास्त्र स्कैनर (Face Reading) ✦</h3>
+        <p class="cosmic-sub">Apna chehra samne seedha rakhein aur roshni mein aaiye</p>
+    </div>
+
+    <!-- Scanner Viewport with Face Oval Mask -->
+    <div class="camera-viewport">
+        <div class="face-oval-overlay">
+            <div class="face-guide-oval"></div>
+            <div class="scan-laser-line"></div>
+        </div>
+
+        @if (IsScanning)
+        {
+            <div class="scanner-loading-overlay">
+                <div class="cosmic-spinner"></div>
+                <p class="mt-3">Mukhakriti Ka Adhyayan Ho Raha Hai...</p>
+            </div>
+        }
+    </div>
+
+    <!-- Controls -->
+    <div class="scanner-controls text-center mt-3">
+        <button class="btn btn-gold btn-lg px-5 shadow-lg" @onclick="CaptureAndScanFaceAsync" disabled="@IsScanning">
+            <i class="bi bi-camera me-2"></i> @(IsScanning ? "Reading Face..." : "Scan Chehra")
+        </button>
+    </div>
+
+    <!-- Face Reading Result Cards -->
+    @if (Result?.FaceAnalysis != null)
+    {
+        <div class="cosmic-card mt-4">
+            <h4 class="cosmic-card-header text-center">✦ सामुद्रिक शास्त्र फलादेश ✦</h4>
+
+            <!-- Forehead (Mastak) -->
+            <div class="zone-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="zone-name" style="color:var(--accent-gold);">मस्तक (Forehead - बुद्धि व भाग्य)</span>
+                    <span class="badge bg-primary">@Result.FaceAnalysis.Forehead.Trait</span>
+                </div>
+                <p class="zone-summary mt-1">@Result.FaceAnalysis.Forehead.Summary</p>
+            </div>
+
+            <!-- Eyes & Eyebrows -->
+            <div class="zone-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="zone-name" style="color:var(--accent-teal);">नेत्र (Eyes - दृष्टि व अंतर्मन)</span>
+                    <span class="badge bg-info">@Result.FaceAnalysis.Eyes.Trait</span>
+                </div>
+                <p class="zone-summary mt-1">@Result.FaceAnalysis.Eyes.Summary</p>
+            </div>
+
+            <!-- Nose (Naak - Dhan Yog) -->
+            <div class="zone-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="zone-name" style="color:var(--accent-green);">नासिका (Nose - धन व समृद्धि योग)</span>
+                    <span class="badge bg-success">@Result.FaceAnalysis.Nose.Trait</span>
+                </div>
+                <p class="zone-summary mt-1">@Result.FaceAnalysis.Nose.Summary</p>
+            </div>
+
+            <!-- Jaw & Chin (Ichha Shakti) -->
+            <div class="zone-result-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="zone-name" style="color:var(--accent-violet);">ठोड़ी व जबड़ा (Jaw - संकल्प व दृढ़ता)</span>
+                    <span class="badge bg-secondary">@Result.FaceAnalysis.JawAndChin.Trait</span>
+                </div>
+                <p class="zone-summary mt-1">@Result.FaceAnalysis.JawAndChin.Summary</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public bool IsScanning { get; set; }
+    public ScanResultDto? Result { get; set; }
+
+    private async Task CaptureAndScanFaceAsync()
+    {
+        IsScanning = true;
+        try
+        {
+            var sampleBytes = new byte[1024];
+            using var ms = new MemoryStream(sampleBytes);
+            Result = await ApiClient.ScanFaceAsync(ms, "face_capture.jpg");
+        }
+        catch
+        {
+            SyncEngine.QueueScanOffline("Face", null, new byte[512], "offline_face.jpg");
+        }
+        finally
+        {
+            IsScanning = false;
+        }
+    }
+}

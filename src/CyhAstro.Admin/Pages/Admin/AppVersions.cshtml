@@ -1,0 +1,109 @@
+@page "/Admin/AppVersions"
+@model CyhAstro.Admin.Pages.Admin.AppVersionsModel
+@{
+    ViewData["Title"] = "App Versions";
+    ViewData["ActivePage"] = "AppVersions";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-cosmic mb-3 p-3">✅ @TempData["Success"]</div>
+}
+
+<div class="row g-3">
+    <!-- Add New Version -->
+    <div class="col-lg-5">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-upload me-2"></i>Naya Version Push Karo</div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;">Platform</label>
+                    <select name="Platform" class="form-select cosmic-input">
+                        <option value="Android">Android (.apk)</option>
+                        <option value="iOS">iOS</option>
+                        <option value="Windows">Windows</option>
+                    </select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;">Version Code</label>
+                        <input type="number" name="VersionCode" value="2" min="1" class="form-control cosmic-input" />
+                        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:3px;">Integer (2, 3, 4...)</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;">Version Name</label>
+                        <input type="text" name="VersionName" value="1.1.0" class="form-control cosmic-input" />
+                        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:3px;">Display (1.1.0)</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;">APK / Download URL</label>
+                    <input type="url" name="DownloadUrl" class="form-control cosmic-input" placeholder="https://yourserver.com/downloads/app.apk" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;">Release Notes</label>
+                    <textarea name="ReleaseNotes" rows="3" class="form-control cosmic-input" placeholder="Is version mein kya naya hai..."></textarea>
+                </div>
+                <div class="mb-4 form-check" style="padding-left:1.5em;">
+                    <input type="checkbox" name="IsMandatory" value="true" class="form-check-input" id="mandatory" style="background: rgba(10,8,20,0.6); border-color: rgba(42,31,74,0.8);" />
+                    <label class="form-check-label" for="mandatory" style="color:var(--text-muted); font-size:0.82rem; cursor:pointer;">
+                        🔴 Mandatory Update (User bina update kiye app use nahi kar payega)
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-gold w-100">
+                    <i class="bi bi-cloud-upload me-2"></i>Push Update
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Current Versions Table -->
+    <div class="col-lg-7">
+        <div class="cosmic-card">
+            <div class="cosmic-card-header"><i class="bi bi-phone me-2"></i>Android Versions</div>
+            <table class="cosmic-table">
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Code</th>
+                        <th>Download URL</th>
+                        <th>Mandatory</th>
+                        <th>Released</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.AndroidVersions)
+                    {
+                        <tr>
+                            <td style="color:var(--accent-gold); font-weight:600;">v@v.VersionName</td>
+                            <td style="color:var(--text-muted);">@v.VersionCode</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(v.DownloadUrl))
+                                {
+                                    <a href="@v.DownloadUrl" target="_blank"
+                                       style="color:var(--accent-teal); font-size:0.75rem; word-break:break-all;">
+                                        <i class="bi bi-link-45deg"></i> Download
+                                    </a>
+                                }
+                                else { <span style="color:var(--text-muted);">—</span> }
+                            </td>
+                            <td>
+                                @if (v.IsMandatory)
+                                {
+                                    <span class="plan-badge status-blocked">Mandatory</span>
+                                }
+                                else
+                                {
+                                    <span class="plan-badge plan-free">Optional</span>
+                                }
+                            </td>
+                            <td style="color:var(--text-muted); font-size:0.78rem;">@v.ReleaseNotes</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,120 @@
+@page "/Admin/Scans"
+@model CyhAstro.Admin.Pages.Admin.Scans.IndexModel
+@{
+    ViewData["Title"] = "All Scans History";
+    ViewData["ActivePage"] = "Scans";
+    Layout = "/Pages/Shared/_AdminLayout.cshtml";
+}
+
+<div class="cosmic-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="cosmic-card-header mb-0" style="border:none; padding-bottom:0;">
+            <i class="bi bi-hand-index-thumb me-2"></i>Hand & Face Scans Log
+        </div>
+    </div>
+
+    @if (!Model.Scans.Any())
+    {
+        <div class="text-center py-4" style="color:var(--text-muted);">
+            <i class="bi bi-camera" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Abhi tak koi scan record nahi mila.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="cosmic-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>User</th>
+                        <th>Type</th>
+                        <th>Hand/Side</th>
+                        <th>Image Preview</th>
+                        <th>AI Summary</th>
+                        <th>Sync</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Scans)
+                    {
+                        <tr>
+                            <td style="color:var(--text-muted); font-size:0.75rem; white-space:nowrap;">
+                                @s.ScannedAt.ToString("dd MMM yyyy")<br>
+                                <span style="font-size:0.68rem;">@s.ScannedAt.ToString("HH:mm:ss")</span>
+                            </td>
+                            <td>
+                                <a href="/Admin/Users/@s.UserId" style="color:var(--accent-gold); text-decoration:none; font-weight:500;">
+                                    View User
+                                </a>
+                            </td>
+                            <td>
+                                <span class="plan-badge @(s.ScanType == "Palm" ? "plan-weekly" : "plan-monthly")">
+                                    @s.ScanType
+                                </span>
+                            </td>
+                            <td>@(s.HandSide ?? "—")</td>
+                            <td>
+                                <a href="@s.ImagePath" target="_blank" title="Click to view full image">
+                                    <img src="@(s.ThumbnailPath ?? s.ImagePath)" alt="Scan thumbnail" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--border-color);" />
+                                </a>
+                            </td>
+                            <td style="max-width:320px; font-size:0.78rem;">
+                                @(string.IsNullOrEmpty(s.SummaryText) ? "Processing..." : s.SummaryText)
+                            </td>
+                            <td>
+                                <span class="badge @(s.SyncStatus == "Synced" ? "bg-success" : "bg-warning")">
+                                    @s.SyncStatus
+                                </span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(s.AiRawResponse))
+                                {
+                                    <button class="btn btn-sm btn-outline-info" onclick="showRawJson('@s.ScanId')">
+                                        <i class="bi bi-code-slash"></i> JSON
+                                    </button>
+                                    <div id="json-@s.ScanId" style="display:none;">@s.AiRawResponse</div>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-muted); font-size:0.75rem;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Modal for Raw JSON View -->
+<div class="modal fade" id="rawJsonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-robot me-2"></i>Gemini AI Raw Analysis JSON</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="jsonViewerContent" style="background:rgba(5,3,15,0.9); color:#38ef7d; padding:15px; border-radius:8px; max-height:450px; overflow-y:auto; font-size:0.8rem; border:1px solid var(--border-color);"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function showRawJson(scanId) {
+    const raw = document.getElementById('json-' + scanId).innerText;
+    try {
+        const parsed = JSON.parse(raw);
+        document.getElementById('jsonViewerContent').innerText = JSON.stringify(parsed, null, 2);
+    } catch {
+        document.getElementById('jsonViewerContent').innerText = raw;
+    }
+    new bootstrap.Modal(document.getElementById('rawJsonModal')).show();
+}
+</script>
+}
