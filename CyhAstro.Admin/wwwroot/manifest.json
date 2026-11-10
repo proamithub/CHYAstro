@@ -1,0 +1,17 @@
+{
+  "name": "CyhAstro - वैदिक ज्योतिष एवं हस्तरेखा AI",
+  "short_name": "CyhAstro",
+  "description": "Vedic Astrology, Palmistry AI, Samudrik Shastra & 36 Guna Kundli Match",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090517",
+  "theme_color": "#090517",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

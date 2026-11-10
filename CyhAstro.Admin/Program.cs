@@ -64,10 +64,10 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Root → Admin Dashboard
+// Root → Mobile App
 app.MapGet("/", context =>
 {
-    context.Response.Redirect("/Admin");
+    context.Response.Redirect("/App");
     return Task.CompletedTask;
 });
 

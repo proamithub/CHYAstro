@@ -1,0 +1,702 @@
+@page "/App"
+@model CyhAstro.Admin.Pages.AppModel
+@{
+    ViewData["Title"] = "CyhAstro — वैदिक ज्योतिष";
+    Layout = "/Pages/Shared/_MobileLayout.cshtml";
+}
+
+<style>
+    .mobile-screen-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding-bottom: 70px;
+        position: relative;
+    }
+    .mobile-top-header {
+        padding: 12px 16px;
+        background: rgba(14, 9, 29, 0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 480px;
+        display: flex;
+        justify-content: space-around;
+        background: rgba(12, 8, 25, 0.98);
+        backdrop-filter: blur(14px);
+        border-top: 1px solid rgba(255, 215, 0, 0.25);
+        padding: 8px 4px 14px;
+        z-index: 60;
+    }
+    .nav-tab-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 0.68rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .nav-tab-btn i { font-size: 1.25rem; }
+    .nav-tab-btn.active { color: #f59e0b; font-weight: 700; transform: translateY(-2px); }
+
+    /* ═══════════════════════════════════════════════════
+       COSMIC SHIVA & REVOLVING NAVAGRAHA SOLAR SYSTEM
+       ═══════════════════════════════════════════════════ */
+    .shiva-cosmic-stage {
+        position: relative;
+        width: 100%;
+        height: 310px;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 50%, #1e1045 0%, #0c0620 60%, #05020e 100%);
+        border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+    }
+    .cosmic-stars {
+        position: absolute;
+        inset: 0;
+        background-image:
+            radial-gradient(1px 1px at 20px 30px, #ffffff, transparent),
+            radial-gradient(1.5px 1.5px at 70px 90px, #ffd700, transparent),
+            radial-gradient(1px 1px at 150px 40px, #38bdf8, transparent),
+            radial-gradient(1.5px 1.5px at 220px 110px, #ffffff, transparent),
+            radial-gradient(1px 1px at 290px 50px, #f472b6, transparent),
+            radial-gradient(1.5px 1.5px at 330px 150px, #ffffff, transparent),
+            radial-gradient(1px 1px at 80px 220px, #38bdf8, transparent),
+            radial-gradient(1.5px 1.5px at 180px 240px, #ffd700, transparent);
+        background-size: 350px 300px;
+        opacity: 0.65;
+        animation: stars-twinkle 6s ease-in-out infinite alternate;
+    }
+    @@keyframes stars-twinkle { 0% { opacity: 0.45; } 100% { opacity: 0.85; } }
+
+    .navagraha-solar-system {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+    .orbit-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--orbit-size);
+        height: var(--orbit-size);
+        margin-top: calc(var(--orbit-size) / -2);
+        margin-left: calc(var(--orbit-size) / -2);
+        border: 1px dashed rgba(255, 215, 0, 0.16);
+        border-radius: 50%;
+        animation: orbit-rotate var(--orbit-speed) linear infinite;
+    }
+    .orbit-ring.reverse { animation: orbit-rotate-rev var(--orbit-speed) linear infinite; }
+    .planet-body {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
+    }
+    .planet-surya { width: 11px; height: 11px; background: radial-gradient(circle, #fff7ed, #f59e0b, #d97706); color: #f59e0b; box-shadow: 0 0 14px #f59e0b; }
+    .planet-chandra { width: 8px; height: 8px; background: radial-gradient(circle, #ffffff, #e2e8f0, #94a3b8); color: #e2e8f0; box-shadow: 0 0 10px #ffffff; }
+    .planet-budha { width: 7px; height: 7px; background: radial-gradient(circle, #a7f3d0, #10b981, #047857); color: #10b981; }
+    .planet-shukra { width: 9px; height: 9px; background: radial-gradient(circle, #e0f2fe, #38bdf8, #0284c7); color: #38bdf8; box-shadow: 0 0 12px #38bdf8; }
+    .planet-mangal { width: 8px; height: 8px; background: radial-gradient(circle, #fecaca, #ef4444, #b91c1c); color: #ef4444; box-shadow: 0 0 10px #ef4444; }
+    .planet-guru { width: 13px; height: 13px; background: radial-gradient(circle, #fef08a, #eab308, #ca8a04); color: #eab308; box-shadow: 0 0 14px #eab308; }
+    .planet-shani { width: 10px; height: 10px; background: radial-gradient(circle, #c7d2fe, #6366f1, #3730a3); color: #818cf8; position: relative; }
+    .saturn-ring-disc {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 18px;
+        height: 6px;
+        border: 1.5px solid rgba(251, 191, 36, 0.85);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) rotate(-25deg);
+    }
+    .planet-rahu { width: 7px; height: 7px; background: radial-gradient(circle, #f3e8ff, #a855f7, #6b21a8); color: #a855f7; }
+    .planet-ketu { width: 7px; height: 7px; background: radial-gradient(circle, #ffedd5, #f97316, #c2410c); color: #f97316; }
+
+    @@keyframes orbit-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @@keyframes orbit-rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+    .shiva-divine-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 110px;
+        height: 120px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.5)) drop-shadow(0 0 28px rgba(56, 189, 248, 0.4));
+        animation: divine-float 4s ease-in-out infinite alternate;
+    }
+    @@keyframes divine-float { 0% { transform: translate(-50%, -50%) scale(0.98); } 100% { transform: translate(-50%, -52%) scale(1.02); } }
+    .shiva-aura-glow {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(251, 191, 36, 0.35) 0%, rgba(56, 189, 248, 0.25) 45%, transparent 75%);
+    }
+
+    /* Auth Card */
+    .cosmic-auth-card {
+        background: rgba(18, 12, 38, 0.92);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 24px;
+        padding: 20px 18px;
+        margin: -25px 14px 20px 14px;
+        position: relative;
+        z-index: 12;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+    }
+    .auth-tab-switch {
+        display: flex;
+        background: rgba(10, 6, 22, 0.85);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 30px;
+        padding: 3px;
+        margin-bottom: 16px;
+    }
+    .auth-tab-btn {
+        flex: 1;
+        padding: 9px 10px;
+        border-radius: 26px;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+    }
+    .auth-tab-btn.active {
+        background: linear-gradient(135deg, #d97706, #f59e0b);
+        color: #0b0717;
+        font-weight: 700;
+    }
+    .cosmic-input-group { position: relative; margin-bottom: 12px; }
+    .cosmic-input-group i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #f59e0b; }
+    .cosmic-input-group .form-control {
+        padding-left: 40px;
+        background: rgba(15, 10, 30, 0.85);
+        border: 1px solid rgba(255, 215, 0, 0.22);
+        color: #f8fafc;
+        border-radius: 12px;
+        font-size: 0.85rem;
+    }
+    .btn-cosmic-gold {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #0b0717;
+        font-weight: 700;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+    }
+</style>
+
+<div class="mobile-screen-content">
+    <!-- Top Header -->
+    <div class="mobile-top-header d-flex justify-content-between align-items-center">
+        <div>
+            <div style="font-family:'Cinzel', serif; font-size:1.05rem; color:#fbbf24; font-weight:700;">
+                ✦ CYHASTRO ✦
+            </div>
+            <div style="font-size:0.68rem; color:#94a3b8;">
+                @(Model.IsLoggedIn ? $"नमस्ते, {Model.TestUserProfile!.FullName}" : "🔱 दिव्य शिव प्रवेश द्वार")
+            </div>
+        </div>
+
+        @if (Model.IsLoggedIn)
+        {
+            <form method="post" asp-page-handler="Logout" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size:0.68rem;">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </button>
+            </form>
+        }
+        else
+        {
+            <span class="badge bg-dark border border-warning text-warning" style="font-size:0.65rem;">
+                ॐ नमः शिवाय
+            </span>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        <div class="alert mx-3 mt-3 p-2 text-center @(Model.AlertSuccess ? "alert-success bg-dark border-success text-success" : "alert-danger bg-dark border-danger text-danger")" style="font-size:0.75rem;">
+            @(Model.AlertSuccess ? "✨ " : "⚠️ ") @Model.AlertMessage
+        </div>
+    }
+
+    <!-- ── SCREEN 1: COSMIC SHIVA + REVOLVING NAVAGRAHA LOGIN ── -->
+    @if (!Model.IsLoggedIn || Model.ActiveTab == "login")
+    {
+        <div class="shiva-cosmic-stage">
+            <div class="cosmic-stars"></div>
+
+            <div class="navagraha-solar-system">
+                <div class="orbit-ring" style="--orbit-size: 58px; --orbit-speed: 8s;"><div class="planet-body planet-surya"></div></div>
+                <div class="orbit-ring" style="--orbit-size: 82px; --orbit-speed: 6s;"><div class="planet-body planet-chandra"></div></div>
+                <div class="orbit-ring" style="--orbit-size: 106px; --orbit-speed: 9s;"><div class="planet-body planet-budha"></div></div>
+                <div class="orbit-ring" style="--orbit-size: 130px; --orbit-speed: 11s;"><div class="planet-body planet-shukra"></div></div>
+                <div class="orbit-ring" style="--orbit-size: 156px; --orbit-speed: 13s;"><div class="planet-body planet-mangal"></div></div>
+                <div class="orbit-ring" style="--orbit-size: 184px; --orbit-speed: 18s;"><div class="planet-body planet-guru"></div></div>
+                <div class="orbit-ring" style="--orbit-size: 214px; --orbit-speed: 24s;">
+                    <div class="planet-body planet-shani"><div class="saturn-ring-disc"></div></div>
+                </div>
+                <div class="orbit-ring reverse" style="--orbit-size: 244px; --orbit-speed: 15s;"><div class="planet-body planet-rahu"></div></div>
+                <div class="orbit-ring reverse" style="--orbit-size: 272px; --orbit-speed: 15s;"><div class="planet-body planet-ketu"></div></div>
+            </div>
+
+            <div class="shiva-divine-center">
+                <div class="shiva-aura-glow"></div>
+                <!-- Pure Sacred Vector Shiva in Padmasana -->
+                <svg viewBox="0 0 100 110" width="100" height="110" style="position:relative; z-index:5;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="38" r="26" fill="#fbbf24" opacity="0.4" />
+                    <!-- Trishul -->
+                    <g transform="translate(18, 0)">
+                        <line x1="68" y1="12" x2="68" y2="98" stroke="#f59e0b" stroke-width="1.8" />
+                        <path d="M 68 12 L 68 4 L 70 7 Z" fill="#f59e0b" />
+                        <path d="M 62 14 C 62 7, 68 10, 68 16 C 68 10, 74 7, 74 14" stroke="#f59e0b" stroke-width="1.6" fill="none" />
+                    </g>
+                    <!-- Lotus Pedestal -->
+                    <ellipse cx="50" cy="98" rx="34" ry="7" fill="#1e1b4b" stroke="#f59e0b" stroke-width="0.9" />
+                    <!-- Folded Legs (Padmasana) -->
+                    <path d="M 22 93 C 24 82, 34 84, 48 88 C 44 88, 32 94, 22 93 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="0.8" />
+                    <path d="M 78 93 C 76 82, 66 84, 52 88 C 56 88, 68 94, 78 93 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="0.8" />
+                    <!-- Torso -->
+                    <path d="M 36 54 C 36 50, 42 48, 50 48 C 58 48, 64 50, 64 54 C 64 68, 58 84, 50 84 C 42 84, 36 68, 36 54 Z" fill="#38bdf8" />
+                    <!-- Dhyana Mudra Hands in Lap -->
+                    <ellipse cx="50" cy="80" rx="7" ry="3.5" fill="#bae6fd" stroke="#f59e0b" stroke-width="0.8" />
+                    <!-- Face -->
+                    <ellipse cx="50" cy="38" rx="8" ry="9" fill="#38bdf8" />
+                    <!-- Jata & Moon -->
+                    <path d="M 43 32 C 43 24, 48 18, 50 18 C 52 18, 57 24, 57 32 Z" fill="#0f172a" stroke="#f59e0b" stroke-width="0.6" />
+                    <path d="M 54 22 C 57 22, 57 28, 54 28 Z" fill="#ffffff" />
+                    <!-- Tripundra & Third Eye -->
+                    <line x1="47" y1="35" x2="53" y2="35" stroke="#ffffff" stroke-width="0.8" />
+                    <circle cx="50" cy="35" r="0.7" fill="#ef4444" />
+                    <ellipse cx="50" cy="32.5" rx="1" ry="1.8" fill="#f59e0b" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Glassmorphism Login Card -->
+        <div class="cosmic-auth-card">
+            <div class="text-center mb-3">
+                <div style="font-family:'Cinzel', serif; font-size:1.15rem; color:#fbbf24; font-weight:700;">
+                    ॐ नमः शिवाय
+                </div>
+                <div style="font-size:0.75rem; color:#94a3b8;">
+                    वैदिक ज्योतिष • हस्तरेखा स्कैनर • जन्म कुंडली
+                </div>
+            </div>
+
+            <div class="auth-tab-switch">
+                <button type="button" class="auth-tab-btn active" id="tabBtnLogin" onclick="switchAuthView('login')">
+                    लॉगिन (Sign In)
+                </button>
+                <button type="button" class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthView('register')">
+                    नया खाता (Register)
+                </button>
+            </div>
+
+            <!-- Login View -->
+            <div id="authViewLogin">
+                <form method="post" asp-page-handler="Login">
+                    @Html.AntiForgeryToken()
+                    <div class="cosmic-input-group">
+                        <i class="bi bi-envelope"></i>
+                        <input type="text" name="emailOrPhone" class="form-control" placeholder="मोबाइल नंबर या ईमेल" value="tester@cyhastro.com" required />
+                    </div>
+                    <div class="cosmic-input-group">
+                        <i class="bi bi-shield-lock"></i>
+                        <input type="password" name="password" class="form-control" placeholder="पासवर्ड" value="Test@123" required />
+                    </div>
+                    <button type="submit" class="btn btn-cosmic-gold w-100 py-2 mb-2">
+                        ✦ प्रवेश करें (Sign In) ✦
+                    </button>
+                </form>
+
+                <form method="post" asp-page-handler="QuickDemoLogin" class="mt-2 text-center">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-warning w-100 btn-sm py-2">
+                        ⚡ 1-Click Quick Demo Login (अतिथि प्रवेश)
+                    </button>
+                    <div style="font-size:0.65rem; color:#94a3b8; margin-top:4px;">
+                        डेमो: <code>tester@cyhastro.com</code> / <code>Test@123</code>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register View -->
+            <div id="authViewRegister" style="display:none;">
+                <form method="post" asp-page-handler="Register">
+                    @Html.AntiForgeryToken()
+                    <div class="cosmic-input-group">
+                        <i class="bi bi-person"></i>
+                        <input type="text" name="fullName" class="form-control" placeholder="पूरा नाम" required />
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="cosmic-input-group m-0">
+                                <i class="bi bi-envelope"></i>
+                                <input type="email" name="email" class="form-control" placeholder="ईमेल" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="cosmic-input-group m-0">
+                                <i class="bi bi-phone"></i>
+                                <input type="tel" name="phone" class="form-control" placeholder="मोबाइल" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="cosmic-input-group m-0">
+                                <i class="bi bi-key"></i>
+                                <input type="password" name="password" class="form-control" placeholder="पासवर्ड" value="Pass@123" required />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="cosmic-input-group m-0">
+                                <i class="bi bi-calendar"></i>
+                                <input type="date" name="dob" class="form-control" value="1998-05-20" />
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-cosmic-gold w-100 py-2">
+                        ✨ खाता बनाएं एवं 3 मुफ़्त स्कैन पाएं ✨
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+
+    <!-- ── SCREEN 2: LOGGED IN APP INTERIOR ── -->
+    @if (Model.IsLoggedIn && Model.ActiveTab != "login")
+    {
+        <div class="p-3">
+            <!-- TAB 1: PALM SCAN -->
+            @if (Model.ActiveTab == "palm")
+            {
+                <div>
+                    <div class="text-center mb-3">
+                        <h6 style="color:#fbbf24; font-size:1.05rem;">✋ हस्तरेखा स्कैनर (Palmistry AI)</h6>
+                        <p style="font-size:0.75rem; color:#94a3b8;">अपने हाथ की फोटो लें अथवा गैलरी से चुनें</p>
+                    </div>
+
+                    <form method="post" asp-page-handler="ScanPalm" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3 text-center">
+                            <div class="d-inline-flex gap-3">
+                                <label><input type="radio" name="handSide" value="Right" checked class="me-1"> Right (दायां)</label>
+                                <label><input type="radio" name="handSide" value="Left" class="me-1"> Left (बायां)</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-warning fw-bold" style="font-size:0.75rem;">
+                                <i class="bi bi-camera-fill me-1"></i>हाथ की असली फोटो (कैमरा या गैलरी)
+                            </label>
+                            <input type="file" name="palmImage" accept="image/*" capture="environment" class="form-control form-control-sm bg-dark text-light border-secondary" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-cosmic-gold w-100 py-2">
+                            <i class="bi bi-camera me-1"></i> Upload & Analyze with AI
+                        </button>
+                    </form>
+
+                    @if (Model.PalmResult != null)
+                    {
+                        <div class="mt-3 p-3 rounded bg-dark border border-warning">
+                            @if (!string.IsNullOrEmpty(Model.UploadedImageUrl))
+                            {
+                                <div class="text-center mb-2">
+                                    <img src="@Model.UploadedImageUrl" class="rounded border border-warning" style="max-height:140px; max-width:100%; object-fit:cover;" alt="Uploaded Palm" />
+                                </div>
+                            }
+                            <div class="fw-bold mb-2 text-warning text-center">✦ AI हस्तरेखा विश्लेषण ✦</div>
+                            <div class="mb-2 pb-2 border-bottom border-secondary">
+                                <strong class="text-success">जीवन रेखा:</strong> @Model.PalmResult.LifeLine.Summary
+                            </div>
+                            <div class="mb-2 pb-2 border-bottom border-secondary">
+                                <strong class="text-info">मस्तिष्क रेखा:</strong> @Model.PalmResult.HeadLine.Summary
+                            </div>
+                            <div class="mb-2 pb-2 border-bottom border-secondary">
+                                <strong class="text-danger">हृदय रेखा:</strong> @Model.PalmResult.HeartLine.Summary
+                            </div>
+                            <div>
+                                <strong class="text-warning">भाग्य रेखा:</strong> @Model.PalmResult.FateLine.Summary
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- TAB 2: FACE SCAN -->
+            @if (Model.ActiveTab == "face")
+            {
+                <div>
+                    <div class="text-center mb-3">
+                        <h6 style="color:#fbbf24; font-size:1.05rem;">👤 सामुद्रिक शास्त्र (Face Reading AI)</h6>
+                        <p style="font-size:0.75rem; color:#94a3b8;">अपने चेहरे की सेल्फी अथवा फोटो चुनें</p>
+                    </div>
+
+                    <form method="post" asp-page-handler="ScanFace" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label text-warning fw-bold" style="font-size:0.75rem;">
+                                <i class="bi bi-camera me-1"></i>सेल्फी फोटो लें (कैमरा या गैलरी)
+                            </label>
+                            <input type="file" name="faceImage" accept="image/*" capture="user" class="form-control form-control-sm bg-dark text-light border-secondary" required />
+                        </div>
+                        <button type="submit" class="btn btn-cosmic-gold w-100 py-2">
+                            <i class="bi bi-person-bounding-box me-1"></i> Upload & Read Face
+                        </button>
+                    </form>
+
+                    @if (Model.FaceResult != null)
+                    {
+                        <div class="mt-3 p-3 rounded bg-dark border border-warning">
+                            @if (!string.IsNullOrEmpty(Model.UploadedImageUrl))
+                            {
+                                <div class="text-center mb-2">
+                                    <img src="@Model.UploadedImageUrl" class="rounded border border-warning" style="max-height:140px; max-width:100%; object-fit:cover;" alt="Uploaded Face" />
+                                </div>
+                            }
+                            <div class="fw-bold mb-2 text-warning text-center">✦ सामुद्रिक शास्त्र फलादेश ✦</div>
+                            <div class="mb-2 pb-2 border-bottom border-secondary">
+                                <strong class="text-warning">मस्तक:</strong> @Model.FaceResult.Forehead?.Summary
+                            </div>
+                            <div class="mb-2 pb-2 border-bottom border-secondary">
+                                <strong class="text-info">नयन:</strong> @Model.FaceResult.Eyes?.Summary
+                            </div>
+                            <div>
+                                <strong class="text-success">नासिका:</strong> @Model.FaceResult.Nose?.Summary
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- TAB 3: KUNDLI -->
+            @if (Model.ActiveTab == "kundli")
+            {
+                <div>
+                    <div class="text-center mb-3">
+                        <h6 style="color:#fbbf24; font-size:1.05rem;">🔮 वैदिक जन्म कुंडली (Vedic Chart)</h6>
+                        <p style="font-size:0.75rem; color:#94a3b8;">100% Free Math • D1 लग्न चक्र • 36 गुण मिलान</p>
+                    </div>
+
+                    <form method="post" asp-page-handler="CalculateKundli" class="mb-3">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label style="font-size:0.68rem; color:#94a3b8;">DOB</label>
+                                <input type="date" name="dob" value="1995-08-15" class="form-control form-control-sm bg-dark text-light border-secondary" required />
+                            </div>
+                            <div class="col-6">
+                                <label style="font-size:0.68rem; color:#94a3b8;">TIME</label>
+                                <input type="time" name="tob" value="14:30" class="form-control form-control-sm bg-dark text-light border-secondary" required />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-cosmic-gold w-100 py-2">
+                            <i class="bi bi-stars me-1"></i> Calculate Vedic Kundli
+                        </button>
+                    </form>
+
+                    @if (Model.KundliResult != null)
+                    {
+                        <!-- Download PDF Button -->
+                        <div class="mb-3">
+                            <a href="/Admin/AppSimulator?handler=DownloadKundliPdf&name=@(Model.TestUserProfile?.FullName ?? "Devotee")&dob=1995-08-15&tob=14:30&city=New+Delhi" class="btn btn-outline-warning w-100 btn-sm py-2">
+                                <i class="bi bi-file-earmark-pdf-fill me-1 text-danger"></i> 📄 Download Official Kundli PDF
+                            </a>
+                        </div>
+
+                        <!-- North Indian D1 Diamond Chart -->
+                        var d1H = Model.KundliResult.D1Houses;
+                        Func<int, string> GetHPlanets = h => string.Join(" ", d1H.FirstOrDefault(x => x.HouseNumber == h)?.PlanetsHindi ?? new List<string>());
+                        Func<int, int> GetHRashi = h => d1H.FirstOrDefault(x => x.HouseNumber == h)?.RashiNumber ?? h;
+                        <div class="text-center mb-1 fw-bold text-warning" style="font-size:0.75rem;">✦ उत्तर भारतीय लग्न कुंडली (D1) ✦</div>
+                        <svg viewBox="0 0 320 320" width="100%" height="280" style="background:#0c0721; border:2px solid #f59e0b; border-radius:12px;" class="mb-3">
+                            <rect x="0" y="0" width="320" height="320" fill="none" stroke="#d97706" stroke-width="2.5" />
+                            <line x1="0" y1="0" x2="320" y2="320" stroke="#d97706" stroke-width="1.8" />
+                            <line x1="320" y1="0" x2="0" y2="320" stroke="#d97706" stroke-width="1.8" />
+                            <polygon points="160,0 320,160 160,320 0,160" fill="none" stroke="#d97706" stroke-width="1.8" />
+
+                            <text x="160" y="52" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle">@GetHRashi(1)</text>
+                            <text x="160" y="68" fill="#38bdf8" font-size="9" text-anchor="middle">लग्न</text>
+                            <text x="160" y="86" fill="#f8fafc" font-size="9" font-weight="bold" text-anchor="middle">@GetHPlanets(1)</text>
+                            <text x="80" y="24" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(2)</text>
+                            <text x="80" y="44" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(2)</text>
+                            <text x="28" y="70" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(3)</text>
+                            <text x="28" y="92" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(3)</text>
+                            <text x="80" y="135" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle">@GetHRashi(4)</text>
+                            <text x="80" y="162" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(4)</text>
+                            <text x="28" y="230" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(5)</text>
+                            <text x="28" y="252" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(5)</text>
+                            <text x="80" y="280" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(6)</text>
+                            <text x="80" y="298" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(6)</text>
+                            <text x="160" y="215" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle">@GetHRashi(7)</text>
+                            <text x="160" y="242" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(7)</text>
+                            <text x="240" y="280" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(8)</text>
+                            <text x="240" y="298" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(8)</text>
+                            <text x="292" y="230" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(9)</text>
+                            <text x="292" y="252" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(9)</text>
+                            <text x="240" y="135" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle">@GetHRashi(10)</text>
+                            <text x="240" y="162" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(10)</text>
+                            <text x="292" y="70" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(11)</text>
+                            <text x="292" y="92" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(11)</text>
+                            <text x="240" y="24" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">@GetHRashi(12)</text>
+                            <text x="240" y="44" fill="#f8fafc" font-size="9" text-anchor="middle">@GetHPlanets(12)</text>
+                        </svg>
+
+                        <!-- Key Details -->
+                        <div class="p-3 rounded bg-dark border border-secondary mb-3" style="font-size:0.75rem;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>लग्न राशि:</span> <strong class="text-warning">@Model.KundliResult.LagnaRashi (@Model.KundliResult.LagnaDegree°)</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>चंद्र राशि:</span> <strong class="text-info">@Model.KundliResult.MoonRashi</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>नक्षत्र:</span> <strong class="text-success">@Model.KundliResult.Nakshatra (पद @Model.KundliResult.NakshatraPada)</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>विंशोत्तरी महादशा:</span> <strong class="text-warning">@Model.KundliResult.MahadashaCurrent</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>मांगलिक दोष:</span>
+                                <strong class="@(Model.KundliResult.IsManglik ? "text-danger" : "text-success")">
+                                    @(Model.KundliResult.IsManglik ? "हाँ (मांगलिक सक्रिय)" : "नहीं (दोष मुक्त)")
+                                </strong>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- TAB 4: WALLET -->
+            @if (Model.ActiveTab == "wallet")
+            {
+                <div>
+                    <div class="text-center mb-3">
+                        <h6 style="color:#fbbf24; font-size:1.05rem;">💳 वॉलेट व सब्सक्रिप्शन</h6>
+                    </div>
+                    <div class="p-3 rounded bg-dark border border-secondary mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>सक्रिय प्लान:</span>
+                            <span class="badge bg-warning text-dark fs-6">@Model.TestUserProfile!.Plan</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span>हस्तरेखा स्कैन शेष:</span>
+                            <strong class="text-warning">@Model.TestUserProfile.PalmScansRemaining</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>मुखाकृति स्कैन शेष:</span>
+                            <strong class="text-info">@Model.TestUserProfile.FaceScansRemaining</strong>
+                        </div>
+                    </div>
+
+                    <form method="post" asp-page-handler="Upgrade" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="plan" value="Monthly" />
+                        <button type="submit" class="btn btn-outline-warning w-100 py-2">
+                            Upgrade to Monthly VIP (₹299)
+                        </button>
+                    </form>
+                </div>
+            }
+
+            <!-- TAB 5: PROFILE -->
+            @if (Model.ActiveTab == "profile" || Model.ActiveTab == "auth")
+            {
+                <div>
+                    <div class="text-center mb-3">
+                        <h6 style="color:#fbbf24; font-size:1.05rem;">👤 मेरी प्रोफाइल</h6>
+                    </div>
+                    <div class="p-3 rounded bg-dark border border-success mb-3">
+                        <div class="fw-bold text-light mb-1" style="font-size:1rem;">@Model.TestUserProfile!.FullName</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">Email: @(Model.TestUserProfile.Email ?? "None")</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">Phone: @(Model.TestUserProfile.PhoneNumber ?? "None")</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">DOB: @Model.TestUserProfile.DateOfBirth</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Bottom Navigation Bar (When Logged In) -->
+@if (Model.IsLoggedIn)
+{
+    <div class="mobile-bottom-nav">
+        <a href="/App?tab=palm" class="nav-tab-btn @(Model.ActiveTab == "palm" ? "active" : "")">
+            <i class="bi bi-hand-index-thumb"></i>
+            <span>Palm</span>
+        </a>
+        <a href="/App?tab=face" class="nav-tab-btn @(Model.ActiveTab == "face" ? "active" : "")">
+            <i class="bi bi-person-bounding-box"></i>
+            <span>Face</span>
+        </a>
+        <a href="/App?tab=kundli" class="nav-tab-btn @(Model.ActiveTab == "kundli" ? "active" : "")">
+            <i class="bi bi-stars"></i>
+            <span>Kundli</span>
+        </a>
+        <a href="/App?tab=wallet" class="nav-tab-btn @(Model.ActiveTab == "wallet" ? "active" : "")">
+            <i class="bi bi-wallet2"></i>
+            <span>Wallet</span>
+        </a>
+        <a href="/App?tab=profile" class="nav-tab-btn @(Model.ActiveTab == "profile" || Model.ActiveTab == "auth" ? "active" : "")">
+            <i class="bi bi-person-circle"></i>
+            <span>Profile</span>
+        </a>
+    </div>
+}
+
+<script>
+    function switchAuthView(mode) {
+        var loginView = document.getElementById('authViewLogin');
+        var regView = document.getElementById('authViewRegister');
+        var btnLogin = document.getElementById('tabBtnLogin');
+        var btnReg = document.getElementById('tabBtnRegister');
+
+        if (mode === 'register') {
+            if (loginView) loginView.style.display = 'none';
+            if (regView) regView.style.display = 'block';
+            if (btnLogin) btnLogin.classList.remove('active');
+            if (btnReg) btnReg.classList.add('active');
+        } else {
+            if (regView) regView.style.display = 'none';
+            if (loginView) loginView.style.display = 'block';
+            if (btnReg) btnReg.classList.remove('active');
+            if (btnLogin) btnLogin.classList.add('active');
+        }
+    }
+</script>
