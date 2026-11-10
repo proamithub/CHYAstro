@@ -1,4 +1,9 @@
 <Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
   <Project Path="CyhAstro.Admin/CyhAstro.Admin.csproj" />
   <Project Path="CyhAstro.Api/CyhAstro.Api.csproj" />
   <Project Path="CyhAstro.Client/CyhAstro.Client.csproj" />
