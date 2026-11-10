@@ -15,6 +15,7 @@ public class SqlConnectionFactory : ISqlConnectionFactory
     public SqlConnectionFactory(string connectionString)
     {
         _connectionString = connectionString;
+        DapperTypeHandlers.Register();
     }
 
     public IDbConnection CreateConnection()

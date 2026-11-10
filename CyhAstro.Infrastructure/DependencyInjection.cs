@@ -17,6 +17,9 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // ── 0. Register Dapper Type Handlers for DateOnly & TimeOnly ──
+        DapperTypeHandlers.Register();
+
         // ── 1. SQL Connection Factory ─────────────────────────────────
         var connStr = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
