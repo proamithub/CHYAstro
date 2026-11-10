@@ -50,11 +50,12 @@ public class ScanController : ControllerBase
     /// Premium user: Poori 7-line + 3-mount analysis.
     /// </summary>
     [HttpPost("palm")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(10_485_760)] // 10 MB max
-    public async Task<ActionResult<ScanResultDto>> ScanPalm(
-        [FromForm] IFormFile image,
-        [FromForm] string handSide = "Right")
+    public async Task<ActionResult<ScanResultDto>> ScanPalm([FromForm] PalmScanRequest request)
     {
+        var image = request.Image;
+        var handSide = string.IsNullOrWhiteSpace(request.HandSide) ? "Right" : request.HandSide;
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
@@ -125,9 +126,11 @@ public class ScanController : ControllerBase
     /// Premium only feature — Free users ko paywall response milega.
     /// </summary>
     [HttpPost("face")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(10_485_760)]
-    public async Task<ActionResult<ScanResultDto>> ScanFace([FromForm] IFormFile image)
+    public async Task<ActionResult<ScanResultDto>> ScanFace([FromForm] FaceScanRequest request)
     {
+        var image = request.Image;
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
@@ -193,9 +196,12 @@ public class ScanController : ControllerBase
     /// Net aane par pending scans server pe upload hote hain.
     /// </summary>
     [HttpPost("sync")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(52_428_800)] // 50 MB (multiple images)
-    public async Task<ActionResult> SyncOfflineScans([FromForm] List<IFormFile> images, [FromForm] string scanMetaJson)
+    public async Task<ActionResult> SyncOfflineScans([FromForm] SyncOfflineScansRequest request)
     {
+        var images = request.Images;
+        var scanMetaJson = request.ScanMetaJson;
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
@@ -298,3 +304,23 @@ public class ScanController : ControllerBase
 
 /// <summary>Offline scan metadata (mobile se aata hai JSON mein)</summary>
 public record OfflineScanMeta(string ScanType, string? HandSide, DateTime ScannedAt);
+
+/// <summary>Palm scan multipart request</summary>
+public class PalmScanRequest
+{
+    public IFormFile Image { get; set; } = null!;
+    public string HandSide { get; set; } = "Right";
+}
+
+/// <summary>Face scan multipart request</summary>
+public class FaceScanRequest
+{
+    public IFormFile Image { get; set; } = null!;
+}
+
+/// <summary>Sync offline scans multipart request</summary>
+public class SyncOfflineScansRequest
+{
+    public List<IFormFile> Images { get; set; } = new();
+    public string ScanMetaJson { get; set; } = string.Empty;
+}
