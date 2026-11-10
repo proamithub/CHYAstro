@@ -1,9 +1,7 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/CyhAstro.Admin/CyhAstro.Admin.csproj" />
-    <Project Path="src/CyhAstro.Api/CyhAstro.Api.csproj" />
-    <Project Path="src/CyhAstro.Client/CyhAstro.Client.csproj" />
-    <Project Path="src/CyhAstro.Core/CyhAstro.Core.csproj" />
-    <Project Path="src/CyhAstro.Infrastructure/CyhAstro.Infrastructure.csproj" />
-  </Folder>
+  <Project Path="CyhAstro.Admin/CyhAstro.Admin.csproj" />
+  <Project Path="CyhAstro.Api/CyhAstro.Api.csproj" />
+  <Project Path="CyhAstro.Client/CyhAstro.Client.csproj" />
+  <Project Path="CyhAstro.Core/CyhAstro.Core.csproj" />
+  <Project Path="CyhAstro.Infrastructure/CyhAstro.Infrastructure.csproj" />
 </Solution>

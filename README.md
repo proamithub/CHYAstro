@@ -46,34 +46,33 @@ CyhAstro/
 ├── Database/
 │   └── CyhAstro_Schema.sql         # 7 Tables, Indexes, 12 Atomic Stored Procedures
 │
-├── src/
-│   ├── CyhAstro.Core/              # Domain Entities, DTOs, and Repository Interfaces
-│   │   ├── Entities/               # User, Subscription, UserLedger, ScanHistory, KundliProfile
-│   │   ├── DTOs/                   # Request/Response data models
-│   │   └── Interfaces/             # IUserRepository, IScanRepository, IAdminRepository...
-│   │
-│   ├── CyhAstro.Infrastructure/    # Data Access Layer & External Integrations
-│   │   ├── Data/                   # SqlConnectionFactory (Dapper)
-│   │   ├── Repositories/           # Stored Procedure DAL implementations
-│   │   ├── Services/               # GeminiVisionService, VedicAstroService
-│   │   └── DependencyInjection.cs  # Clean IServiceCollection registration extension
-│   │
-│   ├── CyhAstro.Api/               # ASP.NET Core REST API for Mobile/Hybrid Apps
-│   │   ├── Controllers/            # Auth, Kundli, Scan, Subscription, App
-│   │   ├── appsettings.json
-│   │   ├── appsettings.Development.json
-│   │   ├── appsettings.Production.json
-│   │   └── Program.cs              # JWT, Swagger, CORS, File Upload Configuration
-│   │
-│   ├── CyhAstro.Admin/             # Web Admin Management Portal (Razor Pages)
-│   │   ├── Pages/
-│   │   │   ├── Shared/_AdminLayout.cshtml # Dark Cosmic mystic purple-gold UI
-│   │   │   └── Admin/              # Dashboard, Users, Details, Ledger, Scans, Settings, Versions
-│   │   └── Program.cs              # Cookie Authentication & Session Management
-│   │
-│   └── CyhAstro.Client/            # Shared Hybrid Client Library
-│       ├── Services/               # AstroApiClient, OfflineSyncEngine, InAppUpdater
-│       └── Components/             # HandScanner, FaceScanner, KundliView, PaywallModal
+├── CyhAstro.Core/                  # Domain Entities, DTOs, and Repository Interfaces
+│   ├── Entities/                   # User, Subscription, UserLedger, ScanHistory, KundliProfile
+│   ├── DTOs/                       # Request/Response data models
+│   └── Interfaces/                 # IUserRepository, IScanRepository, IAdminRepository...
+│
+├── CyhAstro.Infrastructure/        # Data Access Layer & External Integrations
+│   ├── Data/                       # SqlConnectionFactory (Dapper)
+│   ├── Repositories/               # Stored Procedure DAL implementations
+│   ├── Services/                   # GeminiVisionService, VedicAstroService
+│   └── DependencyInjection.cs      # Clean IServiceCollection registration extension
+│
+├── CyhAstro.Api/                   # ASP.NET Core REST API for Mobile/Hybrid Apps
+│   ├── Controllers/                # Auth, Kundli, Scan, Subscription, App
+│   ├── appsettings.json
+│   ├── appsettings.Development.json
+│   ├── appsettings.Production.json
+│   └── Program.cs                  # JWT, Swagger, CORS, File Upload Configuration
+│
+├── CyhAstro.Admin/                 # Web Admin Management Portal (Razor Pages)
+│   ├── Pages/
+│   │   ├── Shared/_AdminLayout.cshtml # Dark Cosmic mystic purple-gold UI
+│   │   └── Admin/                  # Dashboard, Users, Details, Ledger, Scans, Settings, Versions
+│   └── Program.cs                  # Cookie Authentication & Session Management
+│
+├── CyhAstro.Client/                # Shared Hybrid Client Library
+│   ├── Services/                   # AstroApiClient, OfflineSyncEngine, InAppUpdater
+│   └── Components/                 # HandScanner, FaceScanner, KundliView, PaywallModal
 │
 ├── CyhAstro.sln                    # Standard Solution File
 ├── CyhAstro.slnx                   # Modern .NET 9 XML Solution
@@ -97,7 +96,7 @@ CyhAstro/
 ### 2. Configure Gemini Vision API Key (100% Free)
 1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
 2. Sign in with your Google account and click **"Create API Key"**.
-3. Copy the key and paste it in `src/CyhAstro.Api/appsettings.Development.json`:
+3. Copy the key and paste it in `CyhAstro.Api/appsettings.Development.json`:
 ```json
 "GeminiSettings": {
   "ApiKey": "YOUR_COPIED_GEMINI_KEY",
@@ -108,16 +107,16 @@ CyhAstro/
 ### 3. Run the Backend API
 ```powershell
 cd "d:\samle pro\CyhAstro"
-dotnet run --project src/CyhAstro.Api
+dotnet run --project CyhAstro.Api
 ```
-- Open your browser to: `https://localhost:5001/swagger` to explore and test the interactive API documentation.
+- Open your browser to: `http://localhost:5176/swagger` to explore and test the interactive API documentation.
 
 ### 4. Run the Web Admin Portal
 ```powershell
 cd "d:\samle pro\CyhAstro"
-dotnet run --project src/CyhAstro.Admin
+dotnet run --project CyhAstro.Admin
 ```
-- Open your browser to: `https://localhost:5002/Admin`
+- Open your browser to: `http://localhost:5066/Admin`
 - Log in with `admin@cyhastro.com` / `Admin@123` to view the Live Dashboard, Users List, Transaction Ledger, and AI Prompt management.
 
 ---
