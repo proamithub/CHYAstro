@@ -54,15 +54,31 @@ public class AppSimulatorModel : PageModel
     public FaceAnalysisDto? FaceResult { get; set; }
     public string? UploadedImageUrl { get; set; }
     public string? GeneratedJwtToken { get; set; }
-    public string ActiveTab { get; set; } = "palm";
+    public string ActiveTab { get; set; } = "login";
+    public string AuthMode { get; set; } = "login"; // "login" or "register"
     public string? AlertMessage { get; set; }
     public bool AlertSuccess { get; set; }
     public string CurrentLang => _localizer.CurrentLanguage;
+    public bool IsLoggedIn => TestUserProfile != null && HttpContext.Session.GetString("SimUserId") != null;
 
-    public async Task OnGetAsync(string tab = "palm")
+    public async Task OnGetAsync(string? tab = null, string? authMode = null)
     {
-        ActiveTab = tab;
-        await LoadActiveUserAsync();
+        AuthMode = authMode ?? "login";
+        var uid = GetCurrentSimUserId();
+
+        if (uid == Guid.Empty)
+        {
+            // Not logged in -> Show cosmic Shiva login screen by default
+            ActiveTab = tab ?? "login";
+            TestUserProfile = null;
+        }
+        else
+        {
+            // Logged in user
+            ActiveTab = tab ?? (ActiveTab == "login" ? "palm" : ActiveTab);
+            TestUserProfile = await _userRepo.GetProfileAsync(uid);
+            GeneratedJwtToken = HttpContext.Session.GetString("SimJwtToken");
+        }
     }
 
     private Guid GetCurrentSimUserId()
@@ -82,7 +98,6 @@ public class AppSimulatorModel : PageModel
         if (id.HasValue && id.Value != Guid.Empty)
             return id.Value;
 
-        // Default test mobile user
         var testId = Guid.NewGuid();
         var hash = BCrypt.Net.BCrypt.HashPassword("Test@123", workFactor: 11);
         await conn.ExecuteAsync(@"
@@ -102,26 +117,23 @@ public class AppSimulatorModel : PageModel
     private async Task LoadActiveUserAsync()
     {
         var uid = GetCurrentSimUserId();
-        if (uid == Guid.Empty)
+        if (uid != Guid.Empty)
         {
-            uid = await GetOrCreateDefaultTestUserIdAsync();
-            HttpContext.Session.SetString("SimUserId", uid.ToString());
+            TestUserProfile = await _userRepo.GetProfileAsync(uid);
+            GeneratedJwtToken = HttpContext.Session.GetString("SimJwtToken");
         }
-
-        TestUserProfile = await _userRepo.GetProfileAsync(uid);
-        GeneratedJwtToken = HttpContext.Session.GetString("SimJwtToken");
     }
 
-    // ── 1. USER LOGIN IN SIMULATOR ─────────────────
+    // ── 1. USER LOGIN FROM SHIVA SCREEN ────────────
     public async Task<IActionResult> OnPostLoginAsync(string emailOrPhone, string password)
     {
-        ActiveTab = "auth";
+        ActiveTab = "login";
+        AuthMode = "login";
 
         if (string.IsNullOrWhiteSpace(emailOrPhone) || string.IsNullOrWhiteSpace(password))
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("MissingEmailOrPhoneLogin");
-            await LoadActiveUserAsync();
             return Page();
         }
 
@@ -138,7 +150,6 @@ public class AppSimulatorModel : PageModel
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("UserNotFound");
-            await LoadActiveUserAsync();
             return Page();
         }
 
@@ -146,7 +157,6 @@ public class AppSimulatorModel : PageModel
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("AccountBlocked");
-            await LoadActiveUserAsync();
             return Page();
         }
 
@@ -154,7 +164,6 @@ public class AppSimulatorModel : PageModel
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("InvalidPassword");
-            await LoadActiveUserAsync();
             return Page();
         }
 
@@ -164,23 +173,43 @@ public class AppSimulatorModel : PageModel
         HttpContext.Session.SetString("SimUserId", userId.Value.ToString());
         HttpContext.Session.SetString("SimJwtToken", token);
 
-        await LoadActiveUserAsync();
+        TestUserProfile = profile;
+        GeneratedJwtToken = token;
+        ActiveTab = "palm"; // Enter App directly into Palm Scanner!
         AlertSuccess = true;
         AlertMessage = _localizer.Get("LoginSuccess", profile.FullName);
         return Page();
     }
 
-    // ── 2. USER REGISTER IN SIMULATOR ──────────────
+    // ── 2. QUICK 1-CLICK DEMO LOGIN ────────────────
+    public async Task<IActionResult> OnPostQuickDemoLoginAsync()
+    {
+        var testId = await GetOrCreateDefaultTestUserIdAsync();
+        var profile = await _userRepo.GetProfileAsync(testId);
+        var token = CreateJwtToken(testId, profile!.FullName, "User");
+
+        HttpContext.Session.SetString("SimUserId", testId.ToString());
+        HttpContext.Session.SetString("SimJwtToken", token);
+
+        TestUserProfile = profile;
+        GeneratedJwtToken = token;
+        ActiveTab = "palm";
+        AlertSuccess = true;
+        AlertMessage = "Demo login successful! Swagat hai " + profile.FullName;
+        return Page();
+    }
+
+    // ── 3. USER REGISTER FROM SHIVA SCREEN ─────────
     public async Task<IActionResult> OnPostRegisterAsync(
         string fullName, string email, string phone, string password, string gender, string dob)
     {
-        ActiveTab = "auth";
+        ActiveTab = "login";
+        AuthMode = "register";
 
         if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("MissingEmailOrPhone");
-            await LoadActiveUserAsync();
             return Page();
         }
 
@@ -188,16 +217,15 @@ public class AppSimulatorModel : PageModel
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("PasswordMinLength");
-            await LoadActiveUserAsync();
             return Page();
         }
 
         var birthDate = DateOnly.TryParse(dob, out var d) ? d : new DateOnly(1995, 1, 1);
         var req = new RegisterRequest(
-            FullName: fullName ?? "App User",
+            FullName: string.IsNullOrWhiteSpace(fullName) ? "Devotee User" : fullName.Trim(),
             Email: string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
             PhoneNumber: string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
-            Password: password,
+            Password: password.Trim(),
             Gender: gender ?? "Male",
             DateOfBirth: birthDate,
             TimeOfBirth: null,
@@ -212,7 +240,6 @@ public class AppSimulatorModel : PageModel
         {
             AlertSuccess = false;
             AlertMessage = _localizer.Get("ServerError");
-            await LoadActiveUserAsync();
             return Page();
         }
 
@@ -222,29 +249,41 @@ public class AppSimulatorModel : PageModel
         HttpContext.Session.SetString("SimUserId", newUserId.Value.ToString());
         HttpContext.Session.SetString("SimJwtToken", token);
 
-        await LoadActiveUserAsync();
+        TestUserProfile = profile;
+        GeneratedJwtToken = token;
+        ActiveTab = "palm";
         AlertSuccess = true;
         AlertMessage = _localizer.Get("RegistrationSuccess");
         return Page();
     }
 
-    // ── 3. USER LOGOUT IN SIMULATOR ────────────────
-    public async Task<IActionResult> OnPostLogoutAsync()
+    // ── 4. LOGOUT (RETURNS TO SHIVA SCREEN) ────────
+    public IActionResult OnPostLogout()
     {
-        ActiveTab = "auth";
         HttpContext.Session.Remove("SimUserId");
         HttpContext.Session.Remove("SimJwtToken");
-        await LoadActiveUserAsync();
+        TestUserProfile = null;
+        GeneratedJwtToken = null;
+        ActiveTab = "login";
+        AuthMode = "login";
         AlertSuccess = true;
-        AlertMessage = "Aap app se log out ho gaye hain. Ab naye account se login/register karein.";
+        AlertMessage = "Aap safaltapoorvak log out ho gaye hain. Mahadev ki kripa aap par bani rahe.";
         return Page();
     }
 
-    // ── 4. REAL PALM SCAN (IMAGE REQUIRED) ────────
+    // ── 5. REAL PALM SCAN (PHOTO REQUIRED) ─────────
     public async Task<IActionResult> OnPostScanPalmAsync(IFormFile? palmImage, string handSide = "Right")
     {
         ActiveTab = "palm";
         await LoadActiveUserAsync();
+
+        if (TestUserProfile == null)
+        {
+            ActiveTab = "login";
+            AlertSuccess = false;
+            AlertMessage = "Pehle app me login karein.";
+            return Page();
+        }
 
         // STRICT VALIDATION: Photo zaroori hai!
         if (palmImage == null || palmImage.Length == 0)
@@ -261,10 +300,9 @@ public class AppSimulatorModel : PageModel
             return Page();
         }
 
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
-        bool isPremium = TestUserProfile?.IsSubscriptionActive == true && TestUserProfile.Plan != "Free";
+        var userId = TestUserProfile.UserId;
+        bool isPremium = TestUserProfile.IsSubscriptionActive && TestUserProfile.Plan != "Free";
 
-        // Save real image to wwwroot/uploads
         var (imageRelPath, thumbRelPath) = await SaveUploadedFileAsync(palmImage, userId, "palm");
         UploadedImageUrl = imageRelPath;
 
@@ -276,13 +314,12 @@ public class AppSimulatorModel : PageModel
         catch (Exception ex)
         {
             AlertSuccess = false;
-            AlertMessage = "Gemini AI call failed: " + ex.Message;
+            AlertMessage = "Gemini AI error: " + ex.Message;
             return Page();
         }
 
         var summaryText = PalmResult?.LifeLine?.Summary ?? "Palm scan complete";
 
-        // Deduct 1 credit & save scan to DB
         var (resultCode, scanId, creditsLeft) = await _scanRepo.SaveScanAsync(
             userId, "Palm", handSide,
             imageRelPath, thumbRelPath,
@@ -301,7 +338,7 @@ public class AppSimulatorModel : PageModel
             AlertSuccess = true;
             AlertMessage = _localizer.CurrentLanguage switch
             {
-                "Hindi" => "हस्तरेखा फोटो का सफल विश्लेषण! AI ने रेखाओं और पर्वतों को स्कैन किया।",
+                "Hindi" => "हस्तरेखा फोटो का सफल विश्लेषण! Google Gemini Vision AI ने रेखाओं और पर्वतों को स्कैन किया।",
                 "English" => "Palm image successfully analyzed by Google Gemini Vision AI!",
                 _ => "Palm photo successfully analyze ho gayi! Gemini Vision AI ne rekhaayein padh li hain."
             };
@@ -310,11 +347,19 @@ public class AppSimulatorModel : PageModel
         return Page();
     }
 
-    // ── 5. REAL FACE SCAN (IMAGE REQUIRED) ────────
+    // ── 6. REAL FACE SCAN (PHOTO REQUIRED) ─────────
     public async Task<IActionResult> OnPostScanFaceAsync(IFormFile? faceImage)
     {
         ActiveTab = "face";
         await LoadActiveUserAsync();
+
+        if (TestUserProfile == null)
+        {
+            ActiveTab = "login";
+            AlertSuccess = false;
+            AlertMessage = "Pehle app me login karein.";
+            return Page();
+        }
 
         // STRICT VALIDATION: Photo zaroori hai!
         if (faceImage == null || faceImage.Length == 0)
@@ -331,8 +376,8 @@ public class AppSimulatorModel : PageModel
             return Page();
         }
 
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
-        bool isPremium = TestUserProfile?.IsSubscriptionActive == true && TestUserProfile.Plan != "Free";
+        var userId = TestUserProfile.UserId;
+        bool isPremium = TestUserProfile.IsSubscriptionActive && TestUserProfile.Plan != "Free";
 
         var (imageRelPath, thumbRelPath) = await SaveUploadedFileAsync(faceImage, userId, "face");
         UploadedImageUrl = imageRelPath;
@@ -345,7 +390,7 @@ public class AppSimulatorModel : PageModel
         catch (Exception ex)
         {
             AlertSuccess = false;
-            AlertMessage = "Gemini AI call failed: " + ex.Message;
+            AlertMessage = "Gemini AI error: " + ex.Message;
             return Page();
         }
 
@@ -378,7 +423,7 @@ public class AppSimulatorModel : PageModel
         return Page();
     }
 
-    // ── 6. KUNDLI CALCULATION ──────────────────────
+    // ── 7. KUNDLI CALCULATION ──────────────────────
     public async Task<IActionResult> OnPostCalculateKundliAsync(
         string dob, string tob, string city, double lat = 28.6139, double lng = 77.2090)
     {
@@ -403,13 +448,15 @@ public class AppSimulatorModel : PageModel
         return Page();
     }
 
-    // ── 7. SUBSCRIPTION UPGRADE ────────────────────
+    // ── 8. SUBSCRIPTION UPGRADE ────────────────────
     public async Task<IActionResult> OnPostUpgradeAsync(string plan)
     {
         ActiveTab = "wallet";
         await LoadActiveUserAsync();
 
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
+        if (TestUserProfile == null) return Page();
+
+        var userId = TestUserProfile.UserId;
         decimal amount = plan switch { "Weekly" => 99, "Monthly" => 299, "Yearly" => 1999, _ => 4999 };
 
         await _subRepo.UpgradePlanAsync(new SubscriptionUpgradeRequest(
@@ -426,19 +473,20 @@ public class AppSimulatorModel : PageModel
         return Page();
     }
 
-    // ── 8. RESET CREDITS ───────────────────────────
+    // ── 9. RESET CREDITS ───────────────────────────
     public async Task<IActionResult> OnPostResetCreditsAsync()
     {
         ActiveTab = "wallet";
         await LoadActiveUserAsync();
-        var userId = TestUserProfile?.UserId ?? await GetOrCreateDefaultTestUserIdAsync();
+
+        if (TestUserProfile == null) return Page();
 
         using var conn = _db.CreateConnection();
         await conn.ExecuteAsync(@"
             UPDATE tbl_Subscriptions
             SET [Plan] = 'Free', PalmScansRemaining = 3, FaceScansRemaining = 1, ExpiryDate = NULL
             WHERE UserId = @UserId;
-        ", new { UserId = userId });
+        ", new { UserId = TestUserProfile.UserId });
 
         await LoadActiveUserAsync();
         AlertSuccess = true;
