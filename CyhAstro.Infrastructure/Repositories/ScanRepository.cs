@@ -99,4 +99,21 @@ public class ScanRepository : IScanRepository
               ORDER BY ScannedAt ASC",
             new { UserId = userId });
     }
+
+    public async Task<(bool Success, string? ImagePath, string? ThumbnailPath)> DeleteScanAsync(Guid scanId)
+    {
+        using var conn = _db.CreateConnection();
+        var scan = await conn.QueryFirstOrDefaultAsync<ScanHistory>(
+            "SELECT ImagePath, ThumbnailPath FROM tbl_ScanHistory WHERE ScanId = @ScanId",
+            new { ScanId = scanId });
+
+        if (scan == null)
+            return (false, null, null);
+
+        await conn.ExecuteAsync(
+            "DELETE FROM tbl_ScanHistory WHERE ScanId = @ScanId",
+            new { ScanId = scanId });
+
+        return (true, scan.ImagePath, scan.ThumbnailPath);
+    }
 }

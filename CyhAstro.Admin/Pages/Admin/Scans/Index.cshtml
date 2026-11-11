@@ -13,6 +13,21 @@
         </div>
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#6ee7b7; font-size:0.85rem;">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#fca5a5; font-size:0.85rem;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     @if (!Model.Scans.Any())
     {
         <div class="text-center py-4" style="color:var(--text-muted);">
@@ -69,17 +84,20 @@
                                 </span>
                             </td>
                             <td>
-                                @if (!string.IsNullOrEmpty(s.AiRawResponse))
-                                {
-                                    <button class="btn btn-sm btn-outline-info" onclick="showRawJson('@s.ScanId')">
-                                        <i class="bi bi-code-slash"></i> JSON
-                                    </button>
-                                    <div id="json-@s.ScanId" style="display:none;">@s.AiRawResponse</div>
-                                }
-                                else
-                                {
-                                    <span style="color:var(--text-muted); font-size:0.75rem;">—</span>
-                                }
+                                <div class="d-flex align-items-center gap-1">
+                                    @if (!string.IsNullOrEmpty(s.AiRawResponse))
+                                    {
+                                        <button class="btn btn-sm btn-outline-info" onclick="showRawJson('@s.ScanId')" title="View AI JSON">
+                                            <i class="bi bi-code-slash"></i> JSON
+                                        </button>
+                                        <div id="json-@s.ScanId" style="display:none;">@s.AiRawResponse</div>
+                                    }
+                                    <form method="post" asp-page-handler="Delete" asp-route-scanId="@s.ScanId" onsubmit="return confirm('क्या आप वाकई इस यूजर का फोटो स्कैन रिकॉर्ड और फोटो फाइल डिलीट करना चाहते हैं?');" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="फोटो और रिकॉर्ड हमेशा के लिए डिलीट करें">
+                                            <i class="bi bi-trash3"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }

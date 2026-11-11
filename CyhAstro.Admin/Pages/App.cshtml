@@ -228,21 +228,26 @@
             </div>
         </div>
 
-        @if (Model.IsLoggedIn)
-        {
-            <form method="post" asp-page-handler="Logout" class="m-0">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size:0.68rem;">
-                    <i class="bi bi-box-arrow-right me-1"></i>Logout
-                </button>
-            </form>
-        }
-        else
-        {
-            <span class="badge bg-dark border border-warning text-warning" style="font-size:0.65rem;">
-                ॐ नमः शिवाय
-            </span>
-        }
+        <div class="d-flex align-items-center gap-2">
+            @if (Model.IsLoggedIn)
+            {
+                <form method="post" asp-page-handler="Logout" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size:0.68rem;">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </button>
+                </form>
+            }
+            else
+            {
+                <span class="badge bg-dark border border-warning text-warning d-none d-sm-inline" style="font-size:0.65rem;">
+                    ॐ नमः शिवाय
+                </span>
+            }
+            <a href="/Admin/Login" class="btn btn-outline-warning btn-sm py-0 px-2" style="font-size:0.7rem; font-weight:600; border-radius:6px;" title="Admin Portal">
+                <i class="bi bi-shield-lock me-1"></i>Admin
+            </a>
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.AlertMessage))
@@ -699,4 +704,89 @@
             if (btnLogin) btnLogin.classList.add('active');
         }
     }
+
+    // ── High Quality Image Auto-Compressor ──
+    function setupImageCompressor(selector, maxDim = 1600, quality = 0.82) {
+        const input = document.querySelector(selector);
+        if (!input) return;
+
+        input.addEventListener('change', async function() {
+            const file = this.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const origSizeKB = Math.round(file.size / 1024);
+            let status = document.getElementById(this.name + '_compress_info');
+            if (!status) {
+                status = document.createElement('div');
+                status.id = this.name + '_compress_info';
+                status.className = 'mt-2 p-2 rounded';
+                status.style.fontSize = '0.72rem';
+                status.style.background = 'rgba(245, 158, 11, 0.12)';
+                status.style.border = '1px solid rgba(245, 158, 11, 0.3)';
+                status.style.color = '#fcd34d';
+                this.parentNode.appendChild(status);
+            }
+            status.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> फोटो ऑप्टिमाइज़ हो रही है...';
+
+            try {
+                const blob = await compressImageBlob(file, maxDim, quality);
+                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+
+                const dt = new DataTransfer();
+                dt.items.add(compressedFile);
+                this.files = dt.files;
+
+                const newSizeKB = Math.round(compressedFile.size / 1024);
+                const savedPct = Math.round((1 - (compressedFile.size / file.size)) * 100);
+                const origLabel = origSizeKB > 1024 ? (origSizeKB/1024).toFixed(1) + ' MB' : origSizeKB + ' KB';
+
+                status.innerHTML = `✅ <strong>फोटो कंप्रेस हो गई!</strong> ${origLabel} ➔ <strong>${newSizeKB} KB</strong> (${savedPct > 0 ? savedPct + '% छोटी' : 'ऑप्टिमाइज़्ड'}), हाई क्वालिटी सुरक्षित!`;
+            } catch (err) {
+                console.warn('Compression fallback to original:', err);
+                status.innerHTML = '✅ फोटो तैयार है।';
+            }
+        });
+    }
+
+    function compressImageBlob(file, maxDim, quality) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, w, h);
+                    canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas null')), 'image/jpeg', quality);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setupImageCompressor('input[name="palmImage"]');
+        setupImageCompressor('input[name="faceImage"]');
+    });
 </script>

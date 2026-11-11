@@ -162,6 +162,7 @@ else
                             <th>AI Summary</th>
                             <th>Sync Status</th>
                             <th>Scanned Date</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -186,6 +187,13 @@ else
                                     <span class="badge @(s.SyncStatus == "Synced" ? "bg-success" : "bg-warning")">@s.SyncStatus</span>
                                 </td>
                                 <td style="color:var(--text-muted); font-size:0.75rem;">@s.ScannedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                                <td>
+                                    <form method="post" asp-page-handler="DeleteScan" asp-route-scanId="@s.ScanId" asp-route-userId="@Model.Profile.UserId" onsubmit="return confirm('क्या आप इस यूजर का फोटो स्कैन रिकॉर्ड और फाइल हमेशा के लिए डिलीट करना चाहते हैं?');" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="डिलीट करें">
+                                            <i class="bi bi-trash3"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         }
                     </tbody>

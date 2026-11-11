@@ -49,6 +49,9 @@ public interface IScanRepository
 
     /// <summary>Pending (offline) scans jo server pe sync hone hain</summary>
     Task<IEnumerable<ScanHistory>> GetPendingScansAsync(Guid userId);
+
+    /// <summary>Scan photo record delete karo (DB se record remove + image paths return)</summary>
+    Task<(bool Success, string? ImagePath, string? ThumbnailPath)> DeleteScanAsync(Guid scanId);
 }
 
 // ─────────────────────────────────────────────

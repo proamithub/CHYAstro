@@ -63,10 +63,10 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Root → Mobile App
+// Root → Admin Portal
 app.MapGet("/", context =>
 {
-    context.Response.Redirect("/App");
+    context.Response.Redirect("/Admin");
     return Task.CompletedTask;
 });
 

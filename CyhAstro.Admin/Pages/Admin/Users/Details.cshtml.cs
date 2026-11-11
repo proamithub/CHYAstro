@@ -12,12 +12,14 @@ public class DetailsModel : PageModel
     private readonly IUserRepository _userRepo;
     private readonly IScanRepository _scanRepo;
     private readonly IAdminRepository _adminRepo;
+    private readonly IWebHostEnvironment _env;
 
-    public DetailsModel(IUserRepository userRepo, IScanRepository scanRepo, IAdminRepository adminRepo)
+    public DetailsModel(IUserRepository userRepo, IScanRepository scanRepo, IAdminRepository adminRepo, IWebHostEnvironment env)
     {
         _userRepo = userRepo;
         _scanRepo = scanRepo;
         _adminRepo = adminRepo;
+        _env = env;
     }
 
     public UserProfileDto? Profile { get; set; }
@@ -59,5 +61,37 @@ public class DetailsModel : PageModel
             TempData["Success"] = $"User successfully {action}ed!";
         }
         return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostDeleteScanAsync(Guid scanId, Guid userId)
+    {
+        var (success, imagePath, thumbPath) = await _scanRepo.DeleteScanAsync(scanId);
+        if (success)
+        {
+            TryDeletePhysicalFile(imagePath);
+            TryDeletePhysicalFile(thumbPath);
+            TempData["Success"] = "User ka scan photo record aur image file successfully delete ho gaya!";
+        }
+        else
+        {
+            TempData["Error"] = "Scan record delete karne me truti hui ya record nahi mila.";
+        }
+        return RedirectToPage(new { id = userId });
+    }
+
+    private void TryDeletePhysicalFile(string? relPath)
+    {
+        if (string.IsNullOrWhiteSpace(relPath)) return;
+        try
+        {
+            var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var cleanRel = relPath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar);
+            var fullPath = Path.Combine(webRoot, cleanRel);
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
+        }
+        catch { }
     }
 }
