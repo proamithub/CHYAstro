@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">CyhAstro</string>
-    <string name="server_url">http://192.168.29.253:5066/App</string>
+    <string name="server_url">https://cyhastro.patnaorthoclinic.com/App</string>
 </resources>

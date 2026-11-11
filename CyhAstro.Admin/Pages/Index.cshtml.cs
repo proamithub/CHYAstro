@@ -14,6 +14,6 @@ public class IndexModel : PageModel
 
     public IActionResult OnGet()
     {
-        return RedirectToPage("/App");
+        return RedirectToPage("/Admin/Index");
     }
 }

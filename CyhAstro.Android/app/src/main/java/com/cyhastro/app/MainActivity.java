@@ -1,18 +1,29 @@
 package com.cyhastro.app;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
+import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -31,13 +42,23 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String PREFS_NAME = "CyhAstroPrefs";
+    private static final String KEY_SERVER_URL = "server_url";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int FILE_CHOOSER_REQUEST_CODE = 2001;
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
+    private ProgressBar progressBar;
+    private View errorLayout;
+    private TextView tvErrorMessage;
+    private EditText etServerUrl;
+    private Button btnRetry;
+    private Button btnResetUrl;
+
     private ValueCallback<Uri[]> fileUploadCallback;
     private Uri capturedPhotoUri;
+    private boolean hasError = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,14 +67,67 @@ public class MainActivity extends AppCompatActivity {
 
         webView = findViewById(R.id.webView);
         swipeRefresh = findViewById(R.id.swipeRefresh);
+        progressBar = findViewById(R.id.progressBar);
+        errorLayout = findViewById(R.id.errorLayout);
+        tvErrorMessage = findViewById(R.id.tvErrorMessage);
+        etServerUrl = findViewById(R.id.etServerUrl);
+        btnRetry = findViewById(R.id.btnRetry);
+        btnResetUrl = findViewById(R.id.btnResetUrl);
 
         setupWebView();
         checkAndRequestPermissions();
 
-        String url = getString(R.string.server_url);
-        webView.loadUrl(url);
+        String currentUrl = getServerUrl();
+        etServerUrl.setText(currentUrl);
 
-        swipeRefresh.setOnRefreshListener(() -> webView.reload());
+        btnRetry.setOnClickListener(v -> {
+            String newUrl = etServerUrl.getText().toString().trim();
+            if (!newUrl.isEmpty()) {
+                saveServerUrl(newUrl);
+                loadUrlWithUi(newUrl);
+            }
+        });
+
+        btnResetUrl.setOnClickListener(v -> {
+            String defaultUrl = getString(R.string.server_url);
+            etServerUrl.setText(defaultUrl);
+            saveServerUrl(defaultUrl);
+            loadUrlWithUi(defaultUrl);
+        });
+
+        swipeRefresh.setOnRefreshListener(() -> {
+            hasError = false;
+            webView.reload();
+        });
+
+        loadUrlWithUi(currentUrl);
+    }
+
+    private String getServerUrl() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getString(KEY_SERVER_URL, getString(R.string.server_url));
+    }
+
+    private void saveServerUrl(String url) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(KEY_SERVER_URL, url).apply();
+    }
+
+    private void loadUrlWithUi(String url) {
+        hasError = false;
+        errorLayout.setVisibility(View.GONE);
+        webView.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
+        webView.loadUrl(url);
+    }
+
+    private void showError(String message) {
+        hasError = true;
+        progressBar.setVisibility(View.GONE);
+        swipeRefresh.setRefreshing(false);
+        webView.setVisibility(View.GONE);
+        errorLayout.setVisibility(View.VISIBLE);
+        tvErrorMessage.setText(message != null && !message.isEmpty() ? message : "सर्वर रिस्पॉन्स नहीं दे रहा है (Connection Error)");
     }
 
     private void setupWebView() {
@@ -66,16 +140,62 @@ public class MainActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                if (!hasError) {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                progressBar.setVisibility(View.GONE);
                 swipeRefresh.setRefreshing(false);
+                if (!hasError) {
+                    errorLayout.setVisibility(View.GONE);
+                    webView.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (request.isForMainFrame()) {
+                    String desc = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) 
+                            ? error.getDescription().toString() 
+                            : "Connection failed";
+                    showError("नेटवर्क एरर: " + desc);
+                }
+            }
+
+            @SuppressWarnings("deprecation")
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                super.onReceivedError(view, errorCode, description, failingUrl);
+                showError("नेटवर्क एरर (" + errorCode + "): " + description);
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // Allow LAN / self-signed certificates during development
+                handler.proceed();
             }
         });
 
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int newProgress) {
+                if (newProgress >= 100) {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
+
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 if (fileUploadCallback != null) {
