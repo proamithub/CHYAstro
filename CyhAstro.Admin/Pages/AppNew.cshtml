@@ -1,0 +1,1410 @@
+@page "/AppNew"
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>CyhAstro — नया यूजर पैनल</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #05020e;
+            font-family: 'Poppins', sans-serif;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 420px;
+            min-height: 100vh;
+            background: #0b071c;
+            position: relative;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        /* ══════════════════════ TOP HEADER ══════════════════════ */
+        .top-header {
+            background: rgba(10, 6, 25, 0.97);
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        /* ══════════════════════ BOTTOM NAV ══════════════════════ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 420px;
+            background: rgba(8, 4, 20, 0.98);
+            border-top: 1px solid rgba(255,215,0,0.2);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 16px;
+            z-index: 200;
+            backdrop-filter: blur(16px);
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: #64748b;
+            font-size: 0.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+        .nav-btn i { font-size: 1.3rem; }
+        .nav-btn.active { color: #f59e0b; }
+        .nav-btn.active i {
+            filter: drop-shadow(0 0 6px #f59e0b88);
+            transform: translateY(-2px);
+        }
+
+        /* ══════════════════════ SCREENS ══════════════════════ */
+        .screen { display: none; padding: 0; }
+        .screen.active { display: block; }
+
+        /* ══════════════════════ HOME SCREEN ══════════════════════ */
+        .hero-banner {
+            background: linear-gradient(160deg, #1a0a3e 0%, #0d0528 50%, #0b071c 100%);
+            padding: 20px 16px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 70% 30%, rgba(139,92,246,0.15) 0%, transparent 60%),
+                        radial-gradient(ellipse at 20% 80%, rgba(245,158,11,0.1) 0%, transparent 50%);
+        }
+        .greeting-text {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: #fbbf24;
+            font-weight: 700;
+        }
+        .sub-greeting { font-size: 0.72rem; color: #94a3b8; }
+
+        /* Daily Briefing Card */
+        .daily-card {
+            margin: 0 16px 16px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(245,158,11,0.1) 100%);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 20px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .daily-card::before {
+            content: '';
+            position: absolute;
+            top: -20px; right: -20px;
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .daily-label {
+            font-size: 0.65rem;
+            color: #f59e0b;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .daily-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.95rem;
+            color: #fbbf24;
+            margin-bottom: 12px;
+        }
+        .briefing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .brief-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+        }
+        .brief-item .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
+        .dot-yellow { background: #f59e0b; box-shadow: 0 0 6px #f59e0b88; }
+        .dot-red { background: #ef4444; box-shadow: 0 0 6px #ef444488; }
+        .dot-pink { background: #ec4899; box-shadow: 0 0 6px #ec489988; }
+
+        .lucky-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .lucky-chip {
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.65rem;
+            color: #fbbf24;
+        }
+        .rahu-chip {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.65rem;
+            color: #fca5a5;
+        }
+        .shub-chip {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.65rem;
+            color: #86efac;
+        }
+
+        /* Section Header */
+        .section-header {
+            padding: 16px 16px 8px;
+            font-size: 0.72rem;
+            color: #f59e0b;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(245,158,11,0.2);
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 0 16px 8px;
+        }
+        .feat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 14px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .feat-card:hover, .feat-card:active {
+            border-color: rgba(245,158,11,0.4);
+            background: rgba(245,158,11,0.06);
+            transform: scale(0.98);
+        }
+        .feat-card.premium::after {
+            content: 'VIP';
+            position: absolute;
+            top: 8px; right: 8px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0b0717;
+            font-size: 0.5rem;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        .feat-card.new::after {
+            content: 'NEW';
+            position: absolute;
+            top: 8px; right: 8px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            font-size: 0.5rem;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        .feat-emoji { font-size: 1.8rem; margin-bottom: 6px; display: block; }
+        .feat-name { font-size: 0.72rem; font-weight: 600; color: #e2e8f0; }
+        .feat-desc { font-size: 0.6rem; color: #64748b; margin-top: 2px; }
+
+        /* Wide cards */
+        .feat-card-wide {
+            margin: 0 16px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s;
+        }
+        .feat-card-wide:hover { border-color: rgba(245,158,11,0.4); }
+        .feat-card-wide .feat-emoji { font-size: 2.2rem; margin: 0; flex-shrink: 0; }
+        .feat-card-wide .info .title { font-size: 0.82rem; font-weight: 600; color: #f8fafc; }
+        .feat-card-wide .info .sub { font-size: 0.65rem; color: #64748b; margin-top: 2px; }
+        .feat-card-wide .arrow { margin-left: auto; color: #475569; font-size: 1rem; }
+
+        /* ══════════════════════ PRASHNA SCREEN ══════════════════════ */
+        .prashna-hero {
+            background: linear-gradient(180deg, #1a0535 0%, #0b071c 100%);
+            padding: 24px 16px 20px;
+            text-align: center;
+        }
+        .crystal-ball {
+            font-size: 5rem;
+            animation: float 3s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 20px rgba(139,92,246,0.5));
+        }
+        @keyframes float {
+            from { transform: translateY(0); }
+            to { transform: translateY(-8px); }
+        }
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            padding: 0 16px 16px;
+        }
+        .num-btn {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            border: 1px solid rgba(139,92,246,0.3);
+            background: rgba(139,92,246,0.08);
+            color: #c4b5fd;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .num-btn:hover, .num-btn.selected {
+            background: rgba(139,92,246,0.4);
+            border-color: #a78bfa;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(139,92,246,0.4);
+        }
+        .oracle-result {
+            margin: 16px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(245,158,11,0.1));
+            border: 1px solid rgba(139,92,246,0.4);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+        .oracle-answer {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+        .oracle-text {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: #c4b5fd;
+            margin-bottom: 8px;
+        }
+        .oracle-detail { font-size: 0.75rem; color: #94a3b8; line-height: 1.6; }
+
+        /* ══════════════════════ KUNDLI SCREEN ══════════════════════ */
+        .kundli-score-card {
+            margin: 16px;
+            background: linear-gradient(135deg, #1a0535, #0d0528);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 20px;
+            padding: 20px;
+        }
+        .score-circle {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(#f59e0b calc(74% * 3.6deg), rgba(255,255,255,0.1) 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            position: relative;
+        }
+        .score-inner {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: #1a0535;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .score-num { font-size: 1.5rem; font-weight: 800; color: #fbbf24; line-height: 1; }
+        .score-denom { font-size: 0.6rem; color: #64748b; }
+        .score-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .score-label { font-size: 0.72rem; color: #94a3b8; width: 80px; flex-shrink: 0; }
+        .score-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+        .score-val { font-size: 0.65rem; color: #fbbf24; width: 30px; text-align: right; }
+
+        /* Mahadasha Timeline */
+        .timeline-card {
+            margin: 0 16px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 16px;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .timeline-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 15px; top: 32px;
+            width: 1px; height: calc(100% + 4px);
+            background: rgba(255,255,255,0.1);
+        }
+        .tl-dot {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(245,158,11,0.15);
+            border: 2px solid rgba(245,158,11,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+        .tl-dot.active {
+            background: rgba(245,158,11,0.3);
+            border-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245,158,11,0.3);
+        }
+        .tl-title { font-size: 0.75rem; font-weight: 600; color: #f8fafc; }
+        .tl-sub { font-size: 0.62rem; color: #64748b; }
+        .tl-badge {
+            background: rgba(245,158,11,0.2);
+            color: #fbbf24;
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-size: 0.58rem;
+        }
+
+        /* ══════════════════════ HOROSCOPE SCREEN ══════════════════════ */
+        .rashi-scroll {
+            display: flex;
+            gap: 10px;
+            padding: 0 16px 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .rashi-scroll::-webkit-scrollbar { display: none; }
+        .rashi-pill {
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50px;
+            padding: 6px 14px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .rashi-pill.selected {
+            background: rgba(245,158,11,0.2);
+            border-color: rgba(245,158,11,0.5);
+            color: #fbbf24;
+        }
+        .horoscope-card {
+            margin: 0 16px 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .horo-header {
+            background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(139,92,246,0.1));
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .rashi-icon { font-size: 2.5rem; }
+        .horo-rashi-name { font-family: 'Cinzel', serif; font-size: 1rem; color: #fbbf24; }
+        .horo-date { font-size: 0.65rem; color: #94a3b8; }
+        .horo-tabs {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .horo-tab {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #64748b;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+        }
+        .horo-tab.active {
+            color: #f59e0b;
+            border-bottom: 2px solid #f59e0b;
+        }
+        .horo-body { padding: 14px 16px; }
+        .horo-category {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: flex-start;
+        }
+        .horo-cat-icon {
+            font-size: 1.1rem;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+        .horo-cat-title { font-size: 0.7rem; font-weight: 600; color: #e2e8f0; }
+        .horo-cat-text { font-size: 0.65rem; color: #94a3b8; line-height: 1.5; margin-top: 2px; }
+
+        /* ══════════════════════ PROFILE SCREEN ══════════════════════ */
+        .profile-header {
+            background: linear-gradient(160deg, #1a0a3e, #0b071c);
+            padding: 24px 16px 20px;
+            text-align: center;
+        }
+        .avatar-ring {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 2px solid #f59e0b;
+            padding: 3px;
+            margin: 0 auto 12px;
+            box-shadow: 0 0 20px rgba(245,158,11,0.3);
+        }
+        .avatar-inner {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .plan-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0b0717;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 800;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 0 16px 16px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .stat-num { font-size: 1.3rem; font-weight: 800; color: #fbbf24; }
+        .stat-label { font-size: 0.58rem; color: #64748b; margin-top: 2px; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.03); }
+        .menu-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .menu-label { font-size: 0.78rem; font-weight: 500; color: #e2e8f0; }
+        .menu-sub { font-size: 0.62rem; color: #64748b; margin-top: 1px; }
+        .menu-arrow { margin-left: auto; color: #475569; }
+
+        /* Upgrade Banner */
+        .upgrade-banner {
+            margin: 0 16px 16px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .upgrade-text .title { font-size: 0.85rem; font-weight: 700; color: white; }
+        .upgrade-text .sub { font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
+        .upgrade-btn {
+            margin-left: auto;
+            background: white;
+            color: #7c3aed;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        /* Tab indicator animation */
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .live-dot {
+            width: 6px; height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse-dot 1.5s infinite;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        /* ══════════════════════ CHAT / AI ══════════════════════ */
+        .chat-area {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 300px;
+        }
+        .chat-bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            line-height: 1.6;
+        }
+        .chat-bubble.ai {
+            background: rgba(139,92,246,0.15);
+            border: 1px solid rgba(139,92,246,0.25);
+            color: #e2e8f0;
+            border-top-left-radius: 4px;
+            align-self: flex-start;
+        }
+        .chat-bubble.user-msg {
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.25);
+            color: #fbbf24;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+        }
+        .chat-sender {
+            font-size: 0.6rem;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .chat-input-row {
+            position: sticky;
+            bottom: 72px;
+            padding: 10px 16px;
+            background: rgba(8,4,20,0.95);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 10px 16px;
+            color: #f8fafc;
+            font-size: 0.78rem;
+            outline: none;
+            font-family: 'Poppins', sans-serif;
+        }
+        .chat-input::placeholder { color: #475569; }
+        .chat-send {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: #0b0717;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Suggested questions */
+        .suggest-scroll {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .suggest-scroll::-webkit-scrollbar { display: none; }
+        .suggest-pill {
+            flex-shrink: 0;
+            background: rgba(139,92,246,0.1);
+            border: 1px solid rgba(139,92,246,0.25);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 0.65rem;
+            color: #c4b5fd;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .suggest-pill:hover { background: rgba(139,92,246,0.2); }
+    </style>
+</head>
+<body>
+
+<div class="phone-shell">
+
+    <!-- ══════════ TOP HEADER ══════════ -->
+    <div class="top-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="greeting-text">✦ CYHASTRO ✦</div>
+            <div class="sub-greeting">नमस्ते, Rahul जी 🙏</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="plan-badge"><i class="bi bi-star-fill" style="font-size:0.6rem;"></i> FREE</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-size:0.9rem;border:1.5px solid rgba(245,158,11,0.4);">👤</div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 1: HOME
+    ══════════════════════════════════════════ -->
+    <div id="screen-home" class="screen active">
+
+        <!-- Hero Daily Briefing -->
+        <div class="hero-banner">
+            <div class="d-flex justify-content-between align-items-center mb-3" style="position:relative;">
+                <div>
+                    <div style="font-size:0.65rem;color:#94a3b8;">मंगलवार, 11 नवंबर 2026</div>
+                    <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:#fbbf24;font-weight:700;">मेरा आज का दिन ✨</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.65rem;color:#64748b;">आपकी राशि</div>
+                    <div style="font-size:1rem;font-weight:700;color:#a78bfa;">♊ मिथुन</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Card -->
+        <div class="daily-card mt-n2" style="margin-top:-16px; position:relative; z-index:5;">
+            <div class="daily-label">🌅 आज का फलादेश</div>
+            <div class="briefing-grid">
+                <div class="brief-item">
+                    <div class="dot dot-green"></div>
+                    <div>
+                        <div style="font-size:0.65rem;color:#86efac;font-weight:600;">💼 करियर</div>
+                        <div style="color:#94a3b8;">बहुत शुभ — आगे बढ़ें</div>
+                    </div>
+                </div>
+                <div class="brief-item">
+                    <div class="dot dot-yellow"></div>
+                    <div>
+                        <div style="font-size:0.65rem;color:#fde68a;font-weight:600;">💰 धन</div>
+                        <div style="color:#94a3b8;">सतर्क रहें, उधार न दें</div>
+                    </div>
+                </div>
+                <div class="brief-item">
+                    <div class="dot dot-red"></div>
+                    <div>
+                        <div style="font-size:0.65rem;color:#fca5a5;font-weight:600;">🏥 स्वास्थ्य</div>
+                        <div style="color:#94a3b8;">पेट का ध्यान रखें</div>
+                    </div>
+                </div>
+                <div class="brief-item">
+                    <div class="dot dot-pink"></div>
+                    <div>
+                        <div style="font-size:0.65rem;color:#fbcfe8;font-weight:600;">❤️ प्रेम</div>
+                        <div style="color:#94a3b8;">रोमांटिक पल आएगा</div>
+                    </div>
+                </div>
+            </div>
+            <div class="lucky-row flex-wrap">
+                <div class="shub-chip">⏰ शुभ: 11AM–1PM</div>
+                <div class="rahu-chip">🚫 राहु: 3–4:30PM</div>
+                <div class="lucky-chip">🍀 लकी: 7 • पीला</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">⚡ Quick Features</div>
+        <div class="feature-grid">
+            <div class="feat-card new" onclick="switchScreen('prashna')">
+                <span class="feat-emoji">🔮</span>
+                <div class="feat-name">प्रश्न कुंडली</div>
+                <div class="feat-desc">हाँ / नहीं का जवाब</div>
+            </div>
+            <div class="feat-card" onclick="switchScreen('horoscope')">
+                <span class="feat-emoji">🌙</span>
+                <div class="feat-name">राशिफल</div>
+                <div class="feat-desc">दैनिक • साप्ताहिक</div>
+            </div>
+            <div class="feat-card new" onclick="switchScreen('kundli')">
+                <span class="feat-emoji">📊</span>
+                <div class="feat-name">कुंडली स्कोर</div>
+                <div class="feat-desc">आपका भाग्य %</div>
+            </div>
+            <div class="feat-card" onclick="showMuhurat()">
+                <span class="feat-emoji">🗓️</span>
+                <div class="feat-name">मुहूर्त</div>
+                <div class="feat-desc">शुभ समय खोजें</div>
+            </div>
+            <div class="feat-card premium" onclick="switchScreen('chat')">
+                <span class="feat-emoji">🤖</span>
+                <div class="feat-name">AI पंडित जी</div>
+                <div class="feat-desc">24/7 सवाल पूछें</div>
+            </div>
+            <div class="feat-card new">
+                <span class="feat-emoji">🔢</span>
+                <div class="feat-name">अंकशास्त्र</div>
+                <div class="feat-desc">नाम • मोबाइल जांच</div>
+            </div>
+        </div>
+
+        <!-- More Features -->
+        <div class="section-header">✦ और सेवाएं</div>
+
+        <div class="feat-card-wide">
+            <span class="feat-emoji">👶</span>
+            <div class="info">
+                <div class="title">बच्चे का नामकरण</div>
+                <div class="sub">राशि, नक्षत्र और शुभ नाम</div>
+            </div>
+            <span class="badge bg-success" style="font-size:0.55rem;">FREE</span>
+            <i class="bi bi-chevron-right arrow"></i>
+        </div>
+
+        <div class="feat-card-wide">
+            <span class="feat-emoji">💍</span>
+            <div class="info">
+                <div class="title">शादी गुण मिलान (36 Guna)</div>
+                <div class="sub">विवाह संगतता जांचें</div>
+            </div>
+            <i class="bi bi-chevron-right arrow"></i>
+        </div>
+
+        <div class="feat-card-wide">
+            <span class="feat-emoji">🌍</span>
+            <div class="info">
+                <div class="title">भाग्यशाली दिशा व शहर</div>
+                <div class="sub">करियर के लिए कहाँ जाएं?</div>
+            </div>
+            <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;font-size:0.55rem;">VIP</span>
+            <i class="bi bi-chevron-right arrow"></i>
+        </div>
+
+        <div class="feat-card-wide">
+            <span class="feat-emoji">🌙</span>
+            <div class="info">
+                <div class="title">सपनों का अर्थ</div>
+                <div class="sub">स्वप्न फल • Swapna Shastra</div>
+            </div>
+            <i class="bi bi-chevron-right arrow"></i>
+        </div>
+
+        <div class="feat-card-wide" style="background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.04));border-color:rgba(239,68,68,0.2);">
+            <span class="feat-emoji">🛕</span>
+            <div class="info">
+                <div class="title">ऑनलाइन पूजा बुकिंग</div>
+                <div class="sub">नवग्रह शांति • रुद्राभिषेक</div>
+            </div>
+            <span class="badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;font-size:0.55rem;">BOOK</span>
+            <i class="bi bi-chevron-right arrow"></i>
+        </div>
+
+        <div style="height:12px;"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 2: PRASHNA ORACLE
+    ══════════════════════════════════════════ -->
+    <div id="screen-prashna" class="screen">
+        <div class="prashna-hero">
+            <div class="crystal-ball">🔮</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:#c4b5fd;margin-top:12px;">प्रश्न कुंडली</div>
+            <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">मन में सवाल सोचें और 1-249 में से कोई भी नंबर चुनें</div>
+            <div style="margin:14px auto 0;max-width:280px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:10px 14px;">
+                <input class="form-control" style="background:transparent;border:none;color:#fbbf24;font-size:0.85rem;text-align:center;" placeholder="अपना सवाल यहाँ लिखें..." id="questionInput" value="क्या मेरी इस साल शादी होगी?" />
+            </div>
+        </div>
+
+        <div class="section-header">नंबर चुनें (1–49)</div>
+        <div class="number-grid" id="numberGrid">
+            <!-- JS से fill होगा -->
+        </div>
+
+        <div id="oracleResult" class="oracle-result" style="display:none;">
+            <div class="oracle-answer" id="oracleEmoji">✅</div>
+            <div class="oracle-text" id="oracleAnswer">हाँ — शुभ संकेत है</div>
+            <div class="oracle-detail" id="oracleDetail">आपकी प्रश्न कुंडली में सप्तम भाव का स्वामी शुभ स्थान पर है। बृहस्पति की दृष्टि सातवें घर पर पड़ रही है, जो विवाह का बलवान योग बना रही है। 2027 के प्रारंभ तक विवाह का प्रबल संयोग दिखता है।</div>
+            <button class="btn btn-outline-warning btn-sm mt-3" onclick="resetOracle()">🔄 दूसरा सवाल पूछें</button>
+        </div>
+
+        <div id="oraclePrompt" class="text-center p-4" style="color:#64748b;font-size:0.75rem;">
+            ऊपर नंबर चुनें — उत्तर प्रकट होगा ✨
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 3: KUNDLI / SCORECARD
+    ══════════════════════════════════════════ -->
+    <div id="screen-kundli" class="screen">
+        <div style="padding:16px 16px 8px;">
+            <div style="font-family:'Cinzel',serif;font-size:1rem;color:#fbbf24;font-weight:700;">🔮 कुंडली डैशबोर्ड</div>
+            <div style="font-size:0.65rem;color:#64748b;">Rahul — मिथुन लग्न • अश्विनी नक्षत्र</div>
+        </div>
+
+        <!-- Score Card -->
+        <div class="kundli-score-card">
+            <div class="text-center mb-3">
+                <div style="font-size:0.65rem;color:#94a3b8;margin-bottom:8px;">कुंडली रिपोर्ट कार्ड</div>
+                <div class="score-circle">
+                    <div class="score-inner">
+                        <div class="score-num">74</div>
+                        <div class="score-denom">/100</div>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem;color:#fbbf24;font-weight:600;">भाग्यशाली ⭐⭐⭐⭐</div>
+            </div>
+
+            <div class="score-row">
+                <div class="score-label">💰 धन योग</div>
+                <div class="score-bar-bg"><div class="score-bar-fill" style="width:80%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div>
+                <div class="score-val">8/10</div>
+            </div>
+            <div class="score-row">
+                <div class="score-label">❤️ प्रेम/विवाह</div>
+                <div class="score-bar-bg"><div class="score-bar-fill" style="width:60%;background:linear-gradient(90deg,#ec4899,#f9a8d4);"></div></div>
+                <div class="score-val">6/10</div>
+            </div>
+            <div class="score-row">
+                <div class="score-label">💼 करियर</div>
+                <div class="score-bar-bg"><div class="score-bar-fill" style="width:90%;background:linear-gradient(90deg,#22c55e,#86efac);"></div></div>
+                <div class="score-val">9/10</div>
+            </div>
+            <div class="score-row">
+                <div class="score-label">🏥 स्वास्थ्य</div>
+                <div class="score-bar-bg"><div class="score-bar-fill" style="width:60%;background:linear-gradient(90deg,#3b82f6,#93c5fd);"></div></div>
+                <div class="score-val">6/10</div>
+            </div>
+            <div class="score-row" style="margin:0;">
+                <div class="score-label">✈️ भाग्य/यात्रा</div>
+                <div class="score-bar-bg"><div class="score-bar-fill" style="width:80%;background:linear-gradient(90deg,#8b5cf6,#c4b5fd);"></div></div>
+                <div class="score-val">8/10</div>
+            </div>
+
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:8px;">
+                <button class="btn btn-sm w-50" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:0.68rem;">📤 WhatsApp Share</button>
+                <button class="btn btn-sm w-50" style="background:rgba(139,92,246,0.15);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3);font-size:0.68rem;">📋 Full Report PDF</button>
+            </div>
+        </div>
+
+        <!-- Dosha Status -->
+        <div class="section-header">⚠️ दोष स्थिति</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 12px;">
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.5rem;">✅</div>
+                <div style="font-size:0.7rem;font-weight:600;color:#86efac;margin-top:4px;">मांगलिक दोष</div>
+                <div style="font-size:0.6rem;color:#64748b;">दोष मुक्त</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.5rem;">⚠️</div>
+                <div style="font-size:0.7rem;font-weight:600;color:#fca5a5;margin-top:4px;">साढ़े साती</div>
+                <div style="font-size:0.6rem;color:#64748b;">उदय चरण (2027 तक)</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.5rem;">🟡</div>
+                <div style="font-size:0.7rem;font-weight:600;color:#fde68a;margin-top:4px;">कालसर्प दोष</div>
+                <div style="font-size:0.6rem;color:#64748b;">आंशिक दोष</div>
+            </div>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.5rem;">✅</div>
+                <div style="font-size:0.7rem;font-weight:600;color:#86efac;margin-top:4px;">पितृ दोष</div>
+                <div style="font-size:0.6rem;color:#64748b;">दोष मुक्त</div>
+            </div>
+        </div>
+
+        <!-- Mahadasha Timeline -->
+        <div class="section-header">🕐 महादशा टाइमलाइन</div>
+        <div class="timeline-card">
+            <div class="timeline-item">
+                <div class="tl-dot" style="background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.4);">🪐</div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="tl-title">शनि महादशा</div>
+                    </div>
+                    <div class="tl-sub">2015 – 2024 • समाप्त</div>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="tl-dot active">☿</div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="tl-title">बुध महादशा</div>
+                        <span class="tl-badge">अभी चल रही</span>
+                    </div>
+                    <div class="tl-sub">2024 – 2041 • 15 वर्ष शेष</div>
+                </div>
+            </div>
+            <div class="timeline-item" style="margin:0;">
+                <div class="tl-dot" style="opacity:0.4;">🌙</div>
+                <div>
+                    <div class="tl-title" style="opacity:0.5;">केतु महादशा</div>
+                    <div class="tl-sub" style="opacity:0.4;">2041 – 2048 • आगे</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gemstone Recommendation -->
+        <div class="section-header">💎 शुभ रत्न सुझाव</div>
+        <div style="display:flex;gap:10px;padding:0 16px 20px;overflow-x:auto;scrollbar-width:none;">
+            <div style="flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.3);border-radius:16px;padding:14px;text-align:center;min-width:100px;">
+                <div style="font-size:2rem;">💛</div>
+                <div style="font-size:0.68rem;font-weight:600;color:#fbbf24;margin-top:4px;">पुखराज</div>
+                <div style="font-size:0.58rem;color:#64748b;">गुरु • Yellow Sapphire</div>
+            </div>
+            <div style="flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid rgba(56,189,248,0.3);border-radius:16px;padding:14px;text-align:center;min-width:100px;">
+                <div style="font-size:2rem;">💚</div>
+                <div style="font-size:0.68rem;font-weight:600;color:#38bdf8;margin-top:4px;">पन्ना</div>
+                <div style="font-size:0.58rem;color:#64748b;">बुध • Emerald</div>
+            </div>
+            <div style="flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:14px;text-align:center;min-width:100px;opacity:0.5;">
+                <div style="font-size:2rem;">❌</div>
+                <div style="font-size:0.68rem;font-weight:600;color:#94a3b8;margin-top:4px;">नीलम</div>
+                <div style="font-size:0.58rem;color:#64748b;">शनि • न पहनें</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 4: HOROSCOPE
+    ══════════════════════════════════════════ -->
+    <div id="screen-horoscope" class="screen">
+        <div style="padding:16px 16px 8px;">
+            <div style="font-family:'Cinzel',serif;font-size:1rem;color:#fbbf24;font-weight:700;">🌙 राशिफल</div>
+        </div>
+
+        <!-- Rashi Selector -->
+        <div class="rashi-scroll">
+            <div class="rashi-pill selected">♊ मिथुन</div>
+            <div class="rashi-pill">♈ मेष</div>
+            <div class="rashi-pill">♉ वृषभ</div>
+            <div class="rashi-pill">♋ कर्क</div>
+            <div class="rashi-pill">♌ सिंह</div>
+            <div class="rashi-pill">♍ कन्या</div>
+            <div class="rashi-pill">♎ तुला</div>
+            <div class="rashi-pill">♏ वृश्चिक</div>
+            <div class="rashi-pill">♐ धनु</div>
+            <div class="rashi-pill">♑ मकर</div>
+            <div class="rashi-pill">♒ कुंभ</div>
+            <div class="rashi-pill">♓ मीन</div>
+        </div>
+
+        <!-- Period Tabs -->
+        <div style="display:flex;gap:8px;padding:0 16px 12px;">
+            <button class="btn btn-sm active" style="border-radius:20px;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);font-size:0.65rem;" onclick="setHoroPeriod(this)">आज</button>
+            <button class="btn btn-sm" style="border-radius:20px;background:rgba(255,255,255,0.05);color:#64748b;border:1px solid rgba(255,255,255,0.1);font-size:0.65rem;" onclick="setHoroPeriod(this)">इस हफ्ते</button>
+            <button class="btn btn-sm" style="border-radius:20px;background:rgba(255,255,255,0.05);color:#64748b;border:1px solid rgba(255,255,255,0.1);font-size:0.65rem;" onclick="setHoroPeriod(this)">इस महीने</button>
+            <button class="btn btn-sm" style="border-radius:20px;background:rgba(255,255,255,0.05);color:#64748b;border:1px solid rgba(255,255,255,0.1);font-size:0.65rem;" onclick="setHoroPeriod(this)">इस साल</button>
+        </div>
+
+        <!-- Horoscope Card -->
+        <div class="horoscope-card">
+            <div class="horo-header">
+                <div class="rashi-icon">♊</div>
+                <div>
+                    <div class="horo-rashi-name">मिथुन राशि (Gemini)</div>
+                    <div class="horo-date">मंगलवार, 11 नवंबर 2026</div>
+                    <div style="margin-top:4px;">
+                        <span style="font-size:0.65rem;">⭐⭐⭐⭐☆</span>
+                        <span style="font-size:0.6rem;color:#94a3b8;margin-left:4px;">आज का दिन बढ़िया है</span>
+                    </div>
+                </div>
+            </div>
+            <div class="horo-tabs">
+                <button class="horo-tab active">सामान्य</button>
+                <button class="horo-tab">करियर</button>
+                <button class="horo-tab">प्रेम</button>
+                <button class="horo-tab">धन</button>
+            </div>
+            <div class="horo-body">
+                <div class="horo-category">
+                    <div class="horo-cat-icon">💫</div>
+                    <div>
+                        <div class="horo-cat-title">आज का सारांश</div>
+                        <div class="horo-cat-text">आज बुध ग्रह आपकी राशि पर शुभ दृष्टि डाल रहे हैं। मानसिक स्पष्टता बढ़ेगी और नए विचार आएंगे। किसी पुराने मित्र से मुलाकात हो सकती है जो करियर में फायदेमंद साबित हो।</div>
+                    </div>
+                </div>
+                <div class="horo-category">
+                    <div class="horo-cat-icon">💼</div>
+                    <div>
+                        <div class="horo-cat-title">करियर</div>
+                        <div class="horo-cat-text">बॉस के सामने अपनी बात रखने का सही समय है। नई जिम्मेदारी मिल सकती है।</div>
+                    </div>
+                </div>
+                <div class="horo-category">
+                    <div class="horo-cat-icon">❤️</div>
+                    <div>
+                        <div class="horo-cat-title">प्रेम व परिवार</div>
+                        <div class="horo-cat-text">जीवनसाथी के साथ समय बिताएं। रिश्तों में मिठास बढ़ेगी।</div>
+                    </div>
+                </div>
+                <div style="margin-top:12px;padding:10px;background:rgba(245,158,11,0.08);border-radius:10px;border:1px solid rgba(245,158,11,0.15);">
+                    <div style="font-size:0.65rem;font-weight:600;color:#fbbf24;margin-bottom:4px;">💊 आज का उपाय</div>
+                    <div style="font-size:0.65rem;color:#94a3b8;">हरे रंग का रुमाल रखें। बुध को प्रसन्न करने के लिए "ॐ बुं बुधाय नमः" 108 बार जपें।</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lucky Info -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 16px 20px;">
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.3rem;">7</div>
+                <div style="font-size:0.58rem;color:#64748b;margin-top:2px;">लकी नंबर</div>
+            </div>
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.3rem;">🟡</div>
+                <div style="font-size:0.58rem;color:#64748b;margin-top:2px;">लकी रंग: पीला</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;text-align:center;">
+                <div style="font-size:1.3rem;">💎</div>
+                <div style="font-size:0.58rem;color:#64748b;margin-top:2px;">पुखराज</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 5: AI CHAT
+    ══════════════════════════════════════════ -->
+    <div id="screen-chat" class="screen">
+        <div style="padding:12px 16px;background:rgba(139,92,246,0.08);border-bottom:1px solid rgba(139,92,246,0.15);display:flex;align-items:center;gap:10px;">
+            <div style="font-size:1.5rem;">🤖</div>
+            <div>
+                <div style="font-size:0.82rem;font-weight:600;color:#c4b5fd;">AI पंडित जी</div>
+                <div style="font-size:0.6rem;color:#64748b;"><span class="live-dot"></span>24/7 उपलब्ध • आपकी कुंडली से जुड़े</div>
+            </div>
+        </div>
+
+        <!-- Suggested Questions -->
+        <div class="suggest-scroll">
+            <div class="suggest-pill" onclick="fillChat('क्या मेरी शादी इस साल होगी?')">💍 शादी कब होगी?</div>
+            <div class="suggest-pill" onclick="fillChat('करियर में तरक्की कब मिलेगी?')">💼 करियर में तरक्की?</div>
+            <div class="suggest-pill" onclick="fillChat('मेरी साढ़े साती कब खत्म होगी?')">🪐 साढ़े साती कब खत्म?</div>
+            <div class="suggest-pill" onclick="fillChat('मुझे कौन सा रत्न पहनना चाहिए?')">💎 कौन सा रत्न?</div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-area">
+            <div>
+                <div class="chat-sender">🤖 AI पंडित जी</div>
+                <div class="chat-bubble ai">नमस्कार Rahul जी! 🙏 मैं आपकी जन्म कुंडली से जुड़ा हूँ। मिथुन लग्न, अश्विनी नक्षत्र और अभी बुध महादशा चल रही है। आप मुझसे कोई भी प्रश्न पूछ सकते हैं — करियर, विवाह, धन, स्वास्थ्य या किसी भी विषय पर।</div>
+            </div>
+            <div>
+                <div class="chat-sender" style="text-align:right;">आप</div>
+                <div class="chat-bubble user-msg">क्या मेरी इस साल शादी होगी?</div>
+            </div>
+            <div>
+                <div class="chat-sender">🤖 AI पंडित जी</div>
+                <div class="chat-bubble ai">वत्स, आपकी कुंडली के अनुसार — सप्तम भाव का स्वामी बुध इस समय अपनी ही महादशा में है, जो विवाह के लिए अनुकूल संकेत है। <br><br>⭐ 2027 के मध्य तक गुरु की गोचर दृष्टि सातवें घर पर पड़ेगी — तब विवाह का सर्वोत्तम योग बनेगा।<br><br>💡 उपाय: शुक्रवार को सफेद मिठाई का दान करें और "ॐ शुं शुक्राय नमः" 108 बार जपें।</div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-row">
+            <input class="chat-input" id="chatInput" placeholder="पंडित जी से पूछें..." />
+            <button class="chat-send" onclick="sendChat()"><i class="bi bi-send-fill"></i></button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 6: PROFILE
+    ══════════════════════════════════════════ -->
+    <div id="screen-profile" class="screen">
+        <div class="profile-header">
+            <div class="avatar-ring">
+                <div class="avatar-inner">👤</div>
+            </div>
+            <div style="font-size:1rem;font-weight:700;color:#f8fafc;margin-bottom:4px;">Rahul Kumar</div>
+            <div style="font-size:0.65rem;color:#64748b;margin-bottom:8px;">rahul@example.com • ♊ मिथुन</div>
+            <div class="plan-badge"><i class="bi bi-star-fill" style="font-size:0.6rem;"></i> FREE PLAN</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-num">12</div>
+                <div class="stat-label">Palm Scans</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">5</div>
+                <div class="stat-label">Face Scans</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">3</div>
+                <div class="stat-label">AI Chats</div>
+            </div>
+        </div>
+
+        <!-- Upgrade Banner -->
+        <div class="upgrade-banner">
+            <div style="font-size:2rem;">👑</div>
+            <div class="upgrade-text">
+                <div class="title">VIP बनें — ₹299/माह</div>
+                <div class="sub">AI चैट • PDF रिपोर्ट • सब कुछ अनलिमिटेड</div>
+            </div>
+            <button class="upgrade-btn">Upgrade</button>
+        </div>
+
+        <!-- Menu Items -->
+        <div style="margin:0 16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;">
+            <div class="menu-item">
+                <div class="menu-icon" style="background:rgba(245,158,11,0.1);">🔮</div>
+                <div>
+                    <div class="menu-label">मेरी कुंडली</div>
+                    <div class="menu-sub">मिथुन लग्न • बुध महादशा</div>
+                </div>
+                <i class="bi bi-chevron-right menu-arrow"></i>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon" style="background:rgba(236,72,153,0.1);">👨‍👩‍👧‍👦</div>
+                <div>
+                    <div class="menu-label">परिवार की कुंडलियां</div>
+                    <div class="menu-sub">1/5 members added</div>
+                </div>
+                <i class="bi bi-chevron-right menu-arrow"></i>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon" style="background:rgba(34,197,94,0.1);">📄</div>
+                <div>
+                    <div class="menu-label">डाउनलोड की गई रिपोर्ट्स</div>
+                    <div class="menu-sub">2 PDF available</div>
+                </div>
+                <i class="bi bi-chevron-right menu-arrow"></i>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon" style="background:rgba(99,102,241,0.1);">🔔</div>
+                <div>
+                    <div class="menu-label">Notifications सेटिंग</div>
+                    <div class="menu-sub">Daily briefing ON</div>
+                </div>
+                <i class="bi bi-chevron-right menu-arrow"></i>
+            </div>
+            <div class="menu-item" style="border:none;">
+                <div class="menu-icon" style="background:rgba(239,68,68,0.1);">🚪</div>
+                <div>
+                    <div class="menu-label" style="color:#fca5a5;">Logout</div>
+                </div>
+                <i class="bi bi-chevron-right menu-arrow"></i>
+            </div>
+        </div>
+
+        <div style="height:20px;"></div>
+    </div>
+
+    <!-- ══════════ BOTTOM NAVIGATION ══════════ -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" id="nav-home" onclick="switchScreen('home')">
+            <i class="bi bi-house-fill"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-btn" id="nav-horoscope" onclick="switchScreen('horoscope')">
+            <i class="bi bi-moon-stars-fill"></i>
+            <span>राशिफल</span>
+        </button>
+        <button class="nav-btn" id="nav-kundli" onclick="switchScreen('kundli')">
+            <i class="bi bi-stars"></i>
+            <span>कुंडली</span>
+        </button>
+        <button class="nav-btn" id="nav-chat" onclick="switchScreen('chat')">
+            <i class="bi bi-robot"></i>
+            <span>AI पंडित</span>
+        </button>
+        <button class="nav-btn" id="nav-profile" onclick="switchScreen('profile')">
+            <i class="bi bi-person-circle"></i>
+            <span>Profile</span>
+        </button>
+    </div>
+</div>
+
+<script>
+    // ── Screen Switcher ──
+    function switchScreen(name) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+        const screenMap = {
+            'home': 'home', 'horoscope': 'horoscope',
+            'kundli': 'kundli', 'chat': 'chat',
+            'profile': 'profile', 'prashna': 'prashna'
+        };
+        const navMap = {
+            'home': 'home', 'horoscope': 'horoscope',
+            'kundli': 'kundli', 'chat': 'chat',
+            'profile': 'profile', 'prashna': 'kundli'
+        };
+
+        const screenEl = document.getElementById('screen-' + name);
+        const navEl = document.getElementById('nav-' + (navMap[name] || name));
+        if (screenEl) screenEl.classList.add('active');
+        if (navEl) navEl.classList.add('active');
+    }
+
+    // ── Number Grid ──
+    const grid = document.getElementById('numberGrid');
+    for (let i = 1; i <= 49; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'num-btn';
+        btn.textContent = i;
+        btn.onclick = () => revealOracle(i, btn);
+        grid.appendChild(btn);
+    }
+
+    function revealOracle(num, btn) {
+        document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+
+        const answers = [
+            { emoji: '✅', text: 'हाँ — शुभ संकेत है', detail: 'आपकी प्रश्न कुंडली में सप्तम भाव का स्वामी शुभ स्थान पर है। बृहस्पति की दृष्टि अनुकूल है। आपका काम होगा।', color: '#22c55e' },
+            { emoji: '⏳', text: 'समय लगेगा — धैर्य रखें', detail: 'अभी ग्रह स्थिति अनुकूल नहीं है, लेकिन 3-4 महीने बाद परिस्थितियां बदलेंगी। शनि की दृष्टि थोड़ी देरी करा रही है।', color: '#f59e0b' },
+            { emoji: '❌', text: 'नहीं — इस समय सावधान', detail: 'वर्तमान ग्रह स्थिति आपके प्रश्न के अनुकूल नहीं है। राहु की स्थिति बाधा डाल रही है। थोड़ा इंतज़ार करें।', color: '#ef4444' },
+        ];
+
+        const idx = num % 3;
+        const ans = answers[idx];
+
+        document.getElementById('oracleEmoji').textContent = ans.emoji;
+        document.getElementById('oracleAnswer').textContent = ans.text;
+        document.getElementById('oracleAnswer').style.color = ans.color;
+        document.getElementById('oracleDetail').textContent = ans.detail;
+        document.getElementById('oracleResult').style.display = 'block';
+        document.getElementById('oraclePrompt').style.display = 'none';
+
+        document.getElementById('oracleResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetOracle() {
+        document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('oracleResult').style.display = 'none';
+        document.getElementById('oraclePrompt').style.display = 'block';
+    }
+
+    // ── Horo Period ──
+    function setHoroPeriod(el) {
+        document.querySelectorAll('[onclick^="setHoroPeriod"]').forEach(b => {
+            b.style.background = 'rgba(255,255,255,0.05)';
+            b.style.color = '#64748b';
+            b.style.borderColor = 'rgba(255,255,255,0.1)';
+        });
+        el.style.background = 'rgba(245,158,11,0.2)';
+        el.style.color = '#fbbf24';
+        el.style.borderColor = 'rgba(245,158,11,0.4)';
+    }
+
+    // ── Chat ──
+    function fillChat(text) {
+        document.getElementById('chatInput').value = text;
+        document.getElementById('chatInput').focus();
+    }
+
+    function sendChat() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const chatArea = document.querySelector('.chat-area');
+
+        const userDiv = document.createElement('div');
+        userDiv.innerHTML = `<div class="chat-sender" style="text-align:right;">आप</div><div class="chat-bubble user-msg">${text}</div>`;
+        chatArea.appendChild(userDiv);
+
+        input.value = '';
+
+        setTimeout(() => {
+            const aiDiv = document.createElement('div');
+            aiDiv.innerHTML = `<div class="chat-sender">🤖 AI पंडित जी</div><div class="chat-bubble ai">वत्स, आपका प्रश्न समझ लिया। आपकी कुंडली के अनुसार बुध महादशा में यह विषय बहुत महत्वपूर्ण है। अधिक विस्तृत जानकारी के लिए VIP plan में जाएं जहाँ AI पंडित जी आपकी पूरी कुंडली के साथ उत्तर देंगे। 🙏</div>`;
+            chatArea.appendChild(aiDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }, 1000);
+
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // Enter key for chat
+    document.getElementById('chatInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    // ── Muhurat popup ──
+    function showMuhurat() {
+        alert('🗓️ मुहूर्त फीचर जल्द आ रहा है!\n\nशादी, गृह प्रवेश, वाहन, बिजनेस के लिए शुभ मुहूर्त।');
+    }
+</script>
+</body>
+</html>
